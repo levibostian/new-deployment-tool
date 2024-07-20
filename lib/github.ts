@@ -98,7 +98,7 @@ export const createGitHubRelease = async ({ owner, repo, tagName, commit }: { ow
 
 const githubApiRequest = async<T>(url: string, method: 'GET' | 'POST' = 'GET', body: object | undefined = undefined): Promise<{ responseJsonBody: T, nextPageUrl: string | undefined }> => {
   const headers = {
-    'Authorization': `Bearer ${Deno.env.get("GITHUB_TOKEN")}`,
+    'Authorization': `Bearer ${Deno.env.get("INPUT_GITHUB_TOKEN")}`,
     'Accept': 'application/vnd.github.v3+json',
     'Content-Type': 'application/json',
   };

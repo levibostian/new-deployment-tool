@@ -3,3 +3,8 @@ description: 'Deploy your project with ease'
 runs:
   using: 'docker'
   image: 'Dockerfile'
+
+inputs:
+  github-token:
+    description: 'GITHUB_TOKEN or a repo scoped PAT.'
+    default: ${{ github.token }}
