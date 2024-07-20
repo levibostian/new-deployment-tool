@@ -1,5 +1,5 @@
-import { getLastGitHubRelease } from "./github.ts";
-import * as git from "./git.ts";
+import { getLastGitHubRelease } from "./lib/github.ts";
+import * as git from "./lib/git.ts";
 
 const currentBranch = await git.getCurrentBranchName();
 
