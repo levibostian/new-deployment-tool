@@ -1,28 +1,26 @@
 
 
-export const getLatestTagForBranch = async (owner: string, repo: string, branch: string) => {
+export const getLatestTagForBranch = async ({ owner, repo, branch }: { owner: string; repo: string; branch: string }) => {
   const releases: [
     { 
-      draft: boolean,  // if the release is a draft
-      target_commitish: string, // the branch the release was created from
-      tag_name: string // the name of the tag. Not the name of the release (which can be different)
+      draft: boolean,
+      target_commitish: string,
+      tag_name: string
     }
-  ] = await githubApiRequest(`/repos/${owner}/${repo}/releases`)
+  ] = await githubApiRequest(`/repos/${owner}/${repo}/releases`);
   
-    const nonDraftReleases = releases.filter(release => !release.draft);
-    const branchReleases = nonDraftReleases.filter(release => release.target_commitish === branch);
+  const nonDraftReleases = releases.filter(release => !release.draft);
+  const branchReleases = nonDraftReleases.filter(release => release.target_commitish === branch);
   
-    if (branchReleases.length === 0) {
-      return null; // No releases found for the branch
-    }
-  
-    // Assuming the releases are sorted in reverse chronological order
-    // If not, you would need to sort them based on the `created_at` or `published_at` timestamp
-    return branchReleases[0].tag_name;
+  if (branchReleases.length === 0) {
+    return null;
   }
+  
+  return branchReleases[0].tag_name;
+}
 
-export const getLastGitHubRelease = async (owner: string, repo: string, branch: string) => {
-  const tagName = await getLatestTagForBranch(owner, repo, branch);
+export const getLastGitHubRelease = async ({ owner, repo, branch }: { owner: string; repo: string; branch: string }) => {
+  const tagName = await getLatestTagForBranch({ owner, repo, branch });
 
   const response: {
     object: {
