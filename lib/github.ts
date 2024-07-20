@@ -20,7 +20,11 @@ export const getLatestTagForBranch = async ({ owner, repo, branch }: { owner: st
 }
 
 export const getLastGitHubRelease = async ({ owner, repo, branch }: { owner: string; repo: string; branch: string }) => {
-  const tagName = await getLatestTagForBranch({ owner, repo, branch });
+  const tagName: string | null = await getLatestTagForBranch({ owner, repo, branch });
+
+  if (tagName === null) {
+    return null;
+  }
 
   const response: {
     object: {
