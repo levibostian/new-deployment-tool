@@ -4,4 +4,4 @@ COPY . /action
 WORKDIR /action
 
 ENTRYPOINT ["deno", "run", "--allow-all"]
-CMD ["deploy.ts"]
+CMD ["/action/deploy.ts"]
