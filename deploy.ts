@@ -1,4 +1,4 @@
-import { getLastGitHubRelease } from "./lib/github.ts";
+import { getLastGitHubRelease, getAllCommitsSinceGivenCommit } from "./lib/github.ts";
 import * as git from "./lib/git.ts";
 
 const currentBranch = await git.getCurrentBranchName();
@@ -16,3 +16,7 @@ if (lastRelease === null) {
 }
 
 console.log(`Last release: ${lastRelease.tagName}`);
+
+const listOfCommits = await getAllCommitsSinceGivenCommit({ owner, repo, branch: "latest", lastTagSha: "17bbc7610bb0854e3c1d3184177dcbef70169801" });
+
+console.log(listOfCommits);
