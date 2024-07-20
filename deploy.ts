@@ -1,5 +1,4 @@
 import { getLastGitHubRelease, getAllCommitsSinceGivenCommit, createGitHubRelease } from "./lib/github.ts";
-import * as git from "./lib/git.ts";
 import {getNextReleaseVersion} from './analyze-commits.ts'
 import * as log from "./lib/log.ts";
 
@@ -9,7 +8,9 @@ log.message(`If you want more information besides the logs, you can optionally v
 log.message(`Ok, let's get started!`)
 log.message(`--------------------------------`)
 
-const currentBranch = await git.getCurrentBranchName();
+const githubRef = Deno.env.get("GITHUB_REF")!;
+log.debug(`GITHUB_REF: ${githubRef}`);
+const currentBranch = githubRef.replace("refs/heads/", "");
 log.debug(`name of current git branch: ${currentBranch}`);
 
 // example value for GITHUB_REPOSITORY: "denoland/deno"
