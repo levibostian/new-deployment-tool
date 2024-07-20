@@ -1,0 +1,7 @@
+name: 'New deployment tool'
+description: 'Deploy your project with ease'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ github.workspace }}/deploy.ts
