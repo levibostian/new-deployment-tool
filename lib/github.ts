@@ -38,14 +38,18 @@ export const getLastGitHubRelease = async ({ owner, repo, branch }: { owner: str
   };
 }
 
-export const getAllCommitsSinceGivenCommit = async({ owner, repo, branch, lastTagSha }: { owner: string; repo: string; branch: string, lastTagSha: string }) => {
+export const getAllCommitsSinceGivenCommit = async({ owner, repo, branch, lastTagSha }: { owner: string; repo: string; branch: string, lastTagSha: string | undefined }) => {
   let commits: {
     sha: string,
     message: string, 
     createdAt: Date
-  }[] = [];  
+  }[] = [];    
   let hasNextPage = true;
-  let url = `https://api.github.com/repos/${owner}/${repo}/commits?sha=${branch}&since=${lastTagSha}`;
+  let url = `https://api.github.com/repos/${owner}/${repo}/commits?sha=${branch}`;
+  // if lastTagSha is provided, get commits since that commit
+  if (lastTagSha) {
+    url += `&since=${lastTagSha}`;
+  }
 
   while (hasNextPage) {        
     const response = await githubApiRequest<{
