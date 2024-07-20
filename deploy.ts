@@ -1,8 +1,8 @@
-import { getLastGitHubRelease, getAllCommitsSinceGivenCommit } from "./lib/github.ts";
+import { getLastGitHubRelease, getAllCommitsSinceGivenCommit, createGitHubRelease } from "./lib/github.ts";
 import * as git from "./lib/git.ts";
 import {getNextReleaseVersion} from './analyze-commits.ts'
 
-const currentBranch = await git.getCurrentBranchName();
+const currentBranch = "latest" // await git.getCurrentBranchName();
 
 console.log(`current git branch ${currentBranch}`)
 
@@ -19,6 +19,7 @@ if (lastRelease === null) {
 console.log(`Last release: ${lastRelease.tagName}`);
 
 const listOfCommits = await getAllCommitsSinceGivenCommit({ owner, repo, branch: "latest", lastTagSha: "17bbc7610bb0854e3c1d3184177dcbef70169801" });
+const newestCommit = listOfCommits[0];
 
 const nextReleaseVersion = await getNextReleaseVersion({ commits: listOfCommits, lastReleaseVersion: lastRelease.tagName });
 
@@ -28,3 +29,5 @@ if (nextReleaseVersion === undefined) {
 }
 
 console.log(`Next release version: ${nextReleaseVersion}`);
+
+// await createGitHubRelease({ owner, repo, tagName: nextReleaseVersion, commit: newestCommit });
