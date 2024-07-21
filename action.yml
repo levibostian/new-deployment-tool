@@ -5,6 +5,6 @@ runs:
   image: 'Dockerfile'
 
 inputs:
-  github-token:
+  github_token:
     description: 'GITHUB_TOKEN or a repo scoped PAT.'
     default: ${{ github.token }}
