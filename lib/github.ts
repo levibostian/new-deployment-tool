@@ -78,9 +78,7 @@ export const getAllCommitsSinceGivenCommit = async({ owner, repo, branch, lastTa
   }
 
   // sort commits by date. first commit is the newest one
-  commits = commits.sort((a, b) => {
-    return a.createdAt.getTime() - b.createdAt.getTime();    
-  });
+    commits = commits.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   return commits;
 }
