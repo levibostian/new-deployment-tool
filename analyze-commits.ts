@@ -6,9 +6,10 @@ import * as log from "./lib/log.ts";
 export const getNextReleaseVersion = async ({commits, lastReleaseVersion}: {commits: GitCommit[], lastReleaseVersion: string | undefined}): Promise<string | undefined> => {
   const lastReleaseSemanticVersion = new SemanticVersion(lastReleaseVersion || '0.0.0');  
 
-  const versionBumpsForEachCommit = commits.map((commit) => {    
+  const versionBumpsForEachCommit = commits.map((commit) => { 
+    log.message(`Analyzing commit: ${commit.message} to determine if it should trigger a new release.`);
     const versionBumpForCommit = versionBumpForCommitBasedOnConventionalCommit(commit)
-    log.message(`Analyzing commit: ${commit.message} to determine if it should trigger a new release. Semantic version bump for commit: ${versionBumpForCommit}`);
+    log.message(`The release type for the commit is ${versionBumpForCommit}`);
     return versionBumpForCommit;    
   }).filter((versionBump) => versionBump !== undefined) as ('patch' | 'major' | 'minor')[];
 
@@ -17,6 +18,7 @@ export const getNextReleaseVersion = async ({commits, lastReleaseVersion}: {comm
     return '1.0.0';
   }
 
+  // return next version, with major being highest priority, then minor, then patch
   if (versionBumpsForEachCommit.includes('major')) {
     return lastReleaseSemanticVersion.bumpMajor();    
   } else if (versionBumpsForEachCommit.includes('minor')) {
