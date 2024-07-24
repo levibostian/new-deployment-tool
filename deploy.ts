@@ -35,8 +35,8 @@ if (listOfCommits.length === 0) {
   Deno.exit(0);  
 }
 const newestCommit = listOfCommits[0];
-log.debug(`Newest commit found: ${newestCommit}`);
-log.debug(`Oldest commit found: ${listOfCommits[listOfCommits.length - 1]}`);
+log.debug(`Newest commit found: ${JSON.stringify(newestCommit)}`);
+log.debug(`Oldest commit found: ${JSON.stringify(listOfCommits[listOfCommits.length - 1])}`);
 
 log.notice(`Analyzing each commit one-by-one to determine the next release version...`);
 const nextReleaseVersion = await getNextReleaseVersion({ commits: listOfCommits, lastReleaseVersion: lastRelease?.tagName });
