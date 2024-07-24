@@ -1,0 +1,10 @@
+name: 'New deployment tool'
+description: 'Deploy your project with ease'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+
+inputs:
+  github_token:
+    description: 'GITHUB_TOKEN or a repo scoped PAT.'
+    default: ${{ github.token }}

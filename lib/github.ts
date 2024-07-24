@@ -1,5 +1,5 @@
 import { GitCommit } from "./type.ts";
-
+import * as log from './log.ts'
 
 export const getLatestTagForBranch = async ({ owner, repo, branch }: { owner: string; repo: string; branch: string }) => {
   const response = await githubApiRequest<{ 
@@ -38,14 +38,18 @@ export const getLastGitHubRelease = async ({ owner, repo, branch }: { owner: str
   };
 }
 
-export const getAllCommitsSinceGivenCommit = async({ owner, repo, branch, lastTagSha }: { owner: string; repo: string; branch: string, lastTagSha: string }) => {
+export const getAllCommitsSinceGivenCommit = async({ owner, repo, branch, lastTagSha }: { owner: string; repo: string; branch: string, lastTagSha: string | undefined }) => {
   let commits: {
     sha: string,
     message: string, 
     createdAt: Date
-  }[] = [];  
+  }[] = [];    
   let hasNextPage = true;
-  let url = `https://api.github.com/repos/${owner}/${repo}/commits?sha=${branch}&since=${lastTagSha}`;
+  let url = `https://api.github.com/repos/${owner}/${repo}/commits?sha=${branch}`;
+  // if lastTagSha is provided, get commits since that commit
+  if (lastTagSha) {
+    url += `&since=${lastTagSha}`;
+  }
 
   while (hasNextPage) {        
     const response = await githubApiRequest<{
@@ -74,9 +78,7 @@ export const getAllCommitsSinceGivenCommit = async({ owner, repo, branch, lastTa
   }
 
   // sort commits by date. first commit is the newest one
-  commits = commits.sort((a, b) => {
-    return a.createdAt.getTime() - b.createdAt.getTime();    
-  });
+    commits = commits.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   return commits;
 }
@@ -94,10 +96,12 @@ export const createGitHubRelease = async ({ owner, repo, tagName, commit }: { ow
 
 const githubApiRequest = async<T>(url: string, method: 'GET' | 'POST' = 'GET', body: object | undefined = undefined): Promise<{ responseJsonBody: T, nextPageUrl: string | undefined }> => {
   const headers = {
-    'Authorization': `Bearer ${Deno.env.get("GITHUB_TOKEN")}`,
+    'Authorization': `Bearer ${Deno.env.get("INPUT_GITHUB_TOKEN")}`, 
     'Accept': 'application/vnd.github.v3+json',
     'Content-Type': 'application/json',
   };
+
+  log.debug(`GitHub API request: ${method}:${url}, headers: ${JSON.stringify(headers)}, body: ${JSON.stringify(body)}`);
 
   const response = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
 

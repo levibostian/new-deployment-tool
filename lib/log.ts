@@ -1,0 +1,59 @@
+// log.ts
+// This module provides a simple API for logging messages at different levels to GitHub Actions.
+
+// GitHub Actions supports setting log level by prefixing the message with specific tokens.
+// Reference: https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-a-debug-message
+
+// Log levels
+const levels = {
+  debug: "::debug::", // Debug messages, not shown by default in GitHub Actions logs.
+  warning: "::warning::", // Warning messages, displayed in yellow in the GitHub Actions logs.
+  error: "::error::", // Error messages, displayed in red, can be used to highlight errors.
+  notice: "::notice::", // Notice messages, a way to highlight important information, displayed in blue.
+  message: "", // Normal messages don't need a prefix, displayed in the standard log color.
+};
+
+// Generic log function
+function log(level: keyof typeof levels, message: string) {
+  console.log(`${levels[level]}${message}`);
+}
+
+/**
+ * Logs a debug message, which is not shown by default but can be enabled in the GitHub Actions workflow settings.
+ * Debug messages are useful for detailed troubleshooting information.
+ */
+export function debug(message: string) {
+  log("debug", message);
+}
+
+/**
+ * Logs a warning message, displayed in yellow in the GitHub Actions logs.
+ * Warning messages are useful for non-critical issues that should be highlighted to users.
+ */
+export function warning(message: string) {
+  log("warning", message);
+}
+
+/**
+ * Logs an error message, displayed in red in the GitHub Actions logs.
+ * Error messages are critical and indicate something went wrong during the execution of the workflow.
+ */
+export function error(message: string) {
+  log("error", message);
+}
+
+/**
+ * Logs a notice message, displayed in blue in the GitHub Actions logs.
+ * Notice messages are useful for highlighting important information that is not necessarily an error or warning.
+ */
+export function notice(message: string) {
+  log("notice", message);
+}
+
+/**
+ * Logs a standard message without any specific log level prefix.
+ * These messages are displayed in the standard log color and are useful for general information.
+ */
+export function message(message: string) {
+  log("message", message);
+}
