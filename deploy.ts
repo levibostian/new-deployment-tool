@@ -1,4 +1,4 @@
-import { getLastGitHubRelease, getAllCommitsSinceGivenCommit, createGitHubRelease } from "./lib/github.ts";
+import { getLatestReleaseForBranch, createGitHubRelease, getAllCommitsSinceGivenCommit } from "./lib/github.ts";
 import {getNextReleaseVersion} from './analyze-commits.ts'
 import * as log from "./lib/log.ts";
 
@@ -19,17 +19,17 @@ const [owner, repo] = githubRepositoryFromEnvironment.split("/");
 log.debug(`github repository executing in: ${githubRepositoryFromEnvironment}. owner: ${owner}, repo: ${repo}`);
 
 log.notice(`Looking for the last release that was created on the current git branch: ${currentBranch}...`);
-const lastRelease = await getLastGitHubRelease({ owner, repo, branch: currentBranch });
-log.debug(`Last release found on github releases: ${lastRelease}`);
+const lastRelease = await getLatestReleaseForBranch({ owner, repo, branch: currentBranch });
+log.debug(`Last release found on github releases: ${lastRelease?.tag.name}`);
 
-if (lastRelease === null) {
+if (!lastRelease) {
   log.message(`Looks like the branch ${currentBranch} has never been released before. This might be the first release!`);
 } else {
-  log.message(`Looks like the last release on the branch ${currentBranch} was: ${lastRelease.tagName}`);
+  log.message(`Looks like the last release on the branch ${currentBranch} was: ${lastRelease.tag.name}`);
 }
 
 log.notice(`Retrieving all git commits that have been created since the last release...`);
-const listOfCommits = await getAllCommitsSinceGivenCommit({ owner, repo, branch: currentBranch, lastTagSha: lastRelease?.commitSha });
+const listOfCommits = await getAllCommitsSinceGivenCommit({ owner, repo, branch: currentBranch, lastTagSha: lastRelease?.tag.commit.sha });
 if (listOfCommits.length === 0) {
   log.warning(`No commits have been created since the last release. This means that there is no new code to deploy. I'll quit now.`);
   Deno.exit(0);  
@@ -39,7 +39,7 @@ log.debug(`Newest commit found: ${JSON.stringify(newestCommit)}`);
 log.debug(`Oldest commit found: ${JSON.stringify(listOfCommits[listOfCommits.length - 1])}`);
 
 log.notice(`Analyzing each commit one-by-one to determine the next release version...`);
-const nextReleaseVersion = await getNextReleaseVersion({ commits: listOfCommits, lastReleaseVersion: lastRelease?.tagName });
+const nextReleaseVersion = await getNextReleaseVersion({ commits: listOfCommits, lastReleaseVersion: lastRelease?.tag.name });
 
 if (nextReleaseVersion === undefined) {
   log.warning(`After analyzing all commits, no version bump is required. This means that there is no new code to deploy. I'll quit now.`);  

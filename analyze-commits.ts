@@ -1,13 +1,13 @@
-import {GitCommit} from "./lib/type.ts";
 import {SemanticVersion} from "./lib/semantic-version.ts";
 import {versionBumpForCommitBasedOnConventionalCommit} from "./lib/conventional-commits.ts";
 import * as log from "./lib/log.ts";
+import { GitHubCommit } from "./lib/github-api.ts";
 
-export const getNextReleaseVersion = async ({commits, lastReleaseVersion}: {commits: GitCommit[], lastReleaseVersion: string | undefined}): Promise<string | undefined> => {
+export const getNextReleaseVersion = async ({commits, lastReleaseVersion}: {commits: GitHubCommit[], lastReleaseVersion: string | undefined}): Promise<string | undefined> => {
   const lastReleaseSemanticVersion = new SemanticVersion(lastReleaseVersion || '0.0.0');  
 
   const versionBumpsForEachCommit = commits.map((commit) => { 
-    log.message(`Analyzing commit: ${commit.message} to determine if it should trigger a new release.`);
+    log.message(`Analyzing commit: ${commit.commit.message} to determine if it should trigger a new release.`);
     const versionBumpForCommit = versionBumpForCommitBasedOnConventionalCommit(commit)
     log.message(`The release type for the commit is ${versionBumpForCommit}`);
     return versionBumpForCommit;    

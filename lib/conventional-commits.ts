@@ -1,7 +1,7 @@
-import { GitCommit } from './type.ts';
+import { GitHubCommit } from './github-api.ts';
 
-export const versionBumpForCommitBasedOnConventionalCommit = (commit: GitCommit): 'patch' | 'major' | 'minor' | undefined => {
-  const message = commit.message;
+export const versionBumpForCommitBasedOnConventionalCommit = (commit: GitHubCommit): 'patch' | 'major' | 'minor' | undefined => {
+  const message = commit.commit.message;
 
   if (/.*!:.*/.test(message)) {
       return 'major';
