@@ -20,7 +20,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: junit-results
-        path: junit.xml
+        path: reports/junit.xml
 
     - name: Annotate failed tests
       if: always() # Run with test/lint failures.
