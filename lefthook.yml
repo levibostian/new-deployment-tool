@@ -1,0 +1,6 @@
+pre-commit:
+  commands:
+    deno_fmt:
+      run: deno fmt
+      include: '**/*.ts'
+      glob: true

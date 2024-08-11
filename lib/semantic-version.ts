@@ -4,7 +4,7 @@ export class SemanticVersion {
   patch: number;
 
   constructor(versionString: string) {
-    const parts = versionString.split('.');
+    const parts = versionString.split(".");
 
     if (parts.length !== 3) {
       throw new Error(`Invalid version string: ${versionString}`);
@@ -24,7 +24,7 @@ export class SemanticVersion {
   }
 
   bumpMinor(): string {
-    return `${this.major}.${this.minor + 1}.0`;    
+    return `${this.major}.${this.minor + 1}.0`;
   }
 
   bumpPatch(): string {

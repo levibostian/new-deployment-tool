@@ -1,10 +1,11 @@
 # new-deployment-tool
+
 WIP new deployment tool
 
-# Development 
+# Development
 
 `GITHUB_REPOSITORY="levibostian/Wendy-iOS" GITHUB_TOKEN="XXX" deno run --allow-all deploy.ts`
 
-# Tests 
+# Tests
 
 `deno test`

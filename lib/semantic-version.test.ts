@@ -1,5 +1,5 @@
-import {assertEquals} from "https://deno.land/std@0.224.0/assert/assert_equals.ts";
-import {assertThrows} from "https://deno.land/std@0.224.0/assert/assert_throws.ts";
+import { assertEquals } from "https://deno.land/std@0.224.0/assert/assert_equals.ts";
+import { assertThrows } from "https://deno.land/std@0.224.0/assert/assert_throws.ts";
 import { SemanticVersion } from "./semantic-version.ts";
 
 Deno.test("SemanticVersion initializes correctly", () => {
@@ -10,7 +10,11 @@ Deno.test("SemanticVersion initializes correctly", () => {
 });
 
 Deno.test("SemanticVersion throws error on invalid version string", () => {
-  assertThrows(() => new SemanticVersion("invalid.version.string"), Error, "Invalid version string: invalid.version.string");
+  assertThrows(
+    () => new SemanticVersion("invalid.version.string"),
+    Error,
+    "Invalid version string: invalid.version.string",
+  );
 });
 
 Deno.test("SemanticVersion bumpMajor works correctly", () => {
@@ -29,13 +33,25 @@ Deno.test("SemanticVersion bumpPatch works correctly", () => {
 });
 
 Deno.test("SemanticVersion throws error on empty version string", () => {
-  assertThrows(() => new SemanticVersion(""), Error, "Invalid version string: ");
+  assertThrows(
+    () => new SemanticVersion(""),
+    Error,
+    "Invalid version string: ",
+  );
 });
 
 Deno.test("SemanticVersion throws error if version string has more than 3 parts", () => {
-  assertThrows(() => new SemanticVersion("1.2.3.4"), Error, "Invalid version string: 1.2.3.4");
+  assertThrows(
+    () => new SemanticVersion("1.2.3.4"),
+    Error,
+    "Invalid version string: 1.2.3.4",
+  );
 });
 
 Deno.test("SemanticVersion throws error if version string has less than 3 parts", () => {
-  assertThrows(() => new SemanticVersion("1.2"), Error, "Invalid version string: 1.2");
+  assertThrows(
+    () => new SemanticVersion("1.2"),
+    Error,
+    "Invalid version string: 1.2",
+  );
 });
