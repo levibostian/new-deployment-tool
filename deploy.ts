@@ -5,6 +5,7 @@ import {
 } from "./lib/github.ts";
 import { getNextReleaseVersion } from "./analyze-commits.ts";
 import * as log from "./lib/log.ts";
+import { GitHubApiImpl, GitHubApi } from "./lib/github-api.ts";
 
 log.notice(`Welcome to new-deployment-tool! 🚀`);
 log.message(
@@ -37,7 +38,11 @@ log.debug(
 log.notice(
   `Looking for the last release that was created on the current git branch: ${currentBranch}...`,
 );
+
+const api: GitHubApi = GitHubApiImpl
+
 const lastRelease = await getLatestReleaseForBranch({
+  api,
   owner,
   repo,
   branch: currentBranch,
@@ -58,6 +63,7 @@ log.notice(
   `Retrieving all git commits that have been created since the last release...`,
 );
 const listOfCommits = await getAllCommitsSinceGivenCommit({
+  api,
   owner,
   repo,
   branch: currentBranch,
@@ -103,6 +109,7 @@ if (isDryRunMode) {
   Deno.exit(0);
 }
 await createGitHubRelease({
+  api,
   owner,
   repo,
   tagName: nextReleaseVersion,

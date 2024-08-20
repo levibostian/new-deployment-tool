@@ -3,7 +3,7 @@ import { GitHubCommit } from "./github-api.ts";
 export const versionBumpForCommitBasedOnConventionalCommit = (
   commit: GitHubCommit,
 ): "patch" | "major" | "minor" | undefined => {
-  const message = commit.commit.message;
+  const message = commit.message;
 
   if (/.*!:.*/.test(message)) {
     return "major";
