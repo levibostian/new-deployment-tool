@@ -59,11 +59,12 @@ export const getAllCommitsSinceGivenCommit = async({ api, owner, repo, branch, l
 
   await api.getCommitsForBranch({ owner, repo, branch, processCommits: async (commits) => {
     for (const commit of commits) {
-      returnResult.push(commit)
-
+      // We do not want to include the last tag commit in the list of commits. This may result in making a release from this commit which we do not want.
       if (commit.sha === lastTagSha) {
         return false; // stop paging when we reach the last tag commit
       }
+
+      returnResult.push(commit)
     }
 
     return true // continue paging    

@@ -236,7 +236,6 @@ describe("getAllCommitsSinceGivenCommit", () => {
         { sha: "sha-B", message: "", date: new Date(5) },
         { sha: "sha-C", message: "", date: new Date(4) },
         { sha: "sha-D", message: "", date: new Date(3) },
-        { sha: "sha-E", message: "", date: new Date(2) },
       ],
     );
   })
