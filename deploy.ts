@@ -20,6 +20,12 @@ const githubRef = Deno.env.get("GITHUB_REF")!;
 log.debug(`GITHUB_REF: ${githubRef}`);
 const currentBranch = githubRef.replace("refs/heads/", "");
 log.debug(`name of current git branch: ${currentBranch}`);
+const isDryRunMode = Deno.env.get("DRY_RUN") === "true"; 
+if (isDryRunMode) {
+  log.warning(
+    `Dry run mode is enabled. This means that I will not actually deploy anything. I will only print out what I would do if I were to deploy.`,
+  );
+}
 
 // example value for GITHUB_REPOSITORY: "denoland/deno"
 const githubRepositoryFromEnvironment = Deno.env.get("GITHUB_REPOSITORY")!;
@@ -90,6 +96,12 @@ log.message(
 );
 
 log.notice(`Creating a new release on GitHub for the new version...`);
+if (isDryRunMode) {
+  log.warning(
+    `Dry run mode is enabled. I would have created a new release on GitHub with the new version: ${nextReleaseVersion}`,
+  );
+  Deno.exit(0);
+}
 await createGitHubRelease({
   owner,
   repo,
