@@ -15,7 +15,7 @@ export const getNextReleaseVersion = async (
 
   const versionBumpsForEachCommit = commits.map((commit) => {
     log.message(
-      `Analyzing commit: ${commit.commit.message} to determine if it should trigger a new release.`,
+      `Analyzing commit: ${commit.message} to determine if it should trigger a new release.`,
     );
     const versionBumpForCommit = versionBumpForCommitBasedOnConventionalCommit(
       commit,

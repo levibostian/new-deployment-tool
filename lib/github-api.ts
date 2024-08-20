@@ -8,34 +8,44 @@ export interface GitHubRelease {
     };
   };
   name: string;
-  created_at: string;
+  created_at: Date;
 }
 
 export interface GitHubCommit {
   sha: string;
+  message: string;
+  date: Date 
+}
+
+interface GitHubCommitApiResponse {
+  sha: string;
   commit: {
     message: string;
-  };
+    committer: { 
+      date: string
+    }
+  }
 }
 
 // Get a list of github releases.
 // The github rest api does not return the git tag (and commit sha) for a release. You would need to also call the tags endpoint and match the tag name to the release name (painful).
 // But I found you can use the github graphql api to get this information in 1 call.
-const getTagsWithGitHubReleases = async <T>(
-  { owner, repo, processReleases }: {
+const getTagsWithGitHubReleases = async(
+  { owner, repo, processReleases, numberOfResults }: {
     owner: string;
     repo: string;
-    processReleases: (data: GitHubRelease[]) => T | null;
+    processReleases: (data: GitHubRelease[]) => Promise<boolean>;
+    numberOfResults?: number
   },
-) => {
+): Promise<void> => {
   // Gets list of tags that also have a github release made for it.
   // If a tag does not have a release, it will not be returned.
   // Sorted by latest release first.
   // Paging enabled.
   const graphqlQuery = `
-query($owner: String!, $repo: String!, $endCursor: String) {
+query($owner: String!, $repo: String!, $endCursor: String, $numberOfResults: Int!) {
   repository(owner: $owner, name: $repo) {
-    releases(first: 100, after: $endCursor, orderBy: {field: CREATED_AT, direction: DESC}) {
+    releases(first: $numberOfResults, after: $endCursor, orderBy: {field: CREATED_AT, direction: DESC}) {
       nodes {
         name # name of github release 
         createdAt # "2024-06-06T04:26:30Z"
@@ -58,28 +68,30 @@ query($owner: String!, $repo: String!, $endCursor: String) {
 }
 `;
 
-  return await githubGraphqlRequestPaging<{
-    repository: {
-      releases: {
-        nodes: {
-          name: string;
-          createdAt: string;
-          isDraft: boolean;
-          tag: {
+  await githubGraphqlRequestPaging<{
+    data: {
+      repository: {
+        releases: {
+          nodes: {
             name: string;
-            target: {
-              oid: string;
+            createdAt: string;
+            isDraft: boolean;
+            tag: {
+              name: string;
+              target: {
+                oid: string;
+              };
             };
+          }[];
+          pageInfo: {
+            endCursor: string;
+            hasNextPage: boolean;
           };
-        }[];
-        pageInfo: {
-          endCursor: string;
-          hasNextPage: boolean;
         };
-      };
+      }
     };
-  }, T>(graphqlQuery, { owner, repo }, (response) => {
-    const releases: GitHubRelease[] = response.repository.releases.nodes
+  }>(graphqlQuery, { owner, repo, numberOfResults: numberOfResults || 100 }, (response) => {
+    const releases: GitHubRelease[] = response.data.repository.releases.nodes
       .filter((release) => !release.isDraft) // only look at releases that are not drafts
       .map((release) => {
         return {
@@ -90,7 +102,7 @@ query($owner: String!, $repo: String!, $endCursor: String) {
             },
           },
           name: release.name,
-          created_at: release.createdAt,
+          created_at: new Date(release.createdAt),
         };
       });
 
@@ -106,9 +118,17 @@ const getCommitsForBranch = async <T>(
     processCommits: (data: GitHubCommit[]) => Promise<boolean>;
   },
 ) => {
-  return await githubApiRequestPaging<GitHubCommit[]>(
+  return await githubApiRequestPaging<GitHubCommitApiResponse[]>(
     `https://api.github.com/repos/${owner}/${repo}/commits?sha=${branch}&per_page=100`,
-    processCommits,
+    async(apiResponse) => {
+      return await processCommits(apiResponse.map((response) => {
+        return {
+          sha: response.sha,
+          message: response.commit.message,
+          date: new Date(response.commit.committer.date)
+        }
+      }))
+    }
   );
 };
 
@@ -232,16 +252,26 @@ async function githubApiRequestPaging<RESPONSE>(
   // };
 */
 const githubGraphqlRequest = async <T>(query: string, variables: object) => {
+  const headers = {
+    "Authorization": `Bearer ${Deno.env.get("INPUT_GITHUB_TOKEN")}`,
+    "Content-Type": "application/json",
+  }
+
+  const body = JSON.stringify({
+    query,
+    variables,
+  })
+
+  log.debug(
+    `GitHub graphql request: headers: ${
+      JSON.stringify(headers)
+    }, body: ${body}`,
+  );
+
   const response = await fetch("https://api.github.com/graphql", {
     method: "POST",
-    headers: {
-      "Authorization": `Bearer ${Deno.env.get("INPUT_GITHUB_TOKEN")}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      query,
-      variables,
-    }),
+    headers,
+    body
   });
 
   if (!response.ok) {
@@ -251,6 +281,8 @@ const githubGraphqlRequest = async <T>(query: string, variables: object) => {
   }
 
   const responseJsonBody: T = await response.json();
+
+  log.debug(`GitHub graphql response: ${JSON.stringify(responseJsonBody)}`);
 
   return {
     status: response.status,
@@ -268,23 +300,24 @@ const githubGraphqlRequest = async <T>(query: string, variables: object) => {
 // }
 // 2. Query contains a variable called endCursor that is used to page through results.
 // See: https://docs.github.com/en/graphql/guides/using-pagination-in-the-graphql-api to learn more about these assumptions.
-async function githubGraphqlRequestPaging<RESPONSE, RETURN>(
+async function githubGraphqlRequestPaging<RESPONSE>(
   query: string,
-  variables: { [key: string]: string },
-  processResponse: (data: RESPONSE) => RETURN | null,
-): Promise<RETURN | null> {
-  let returnValue: RETURN | null = null;
-
+  variables: { [key: string]: string | number },
+  processResponse: (data: RESPONSE) => Promise<boolean>,
+): Promise<void> {
   // deno-lint-ignore no-explicit-any
-  function findPageInfo(obj: any): { hasNextPage: boolean; endCursor: string } {
+  function findPageInfo(_obj: any): { hasNextPage: boolean; endCursor: string } {
+    // Create a shallow copy of the object to avoid modifying the original
+    const obj = { ..._obj };
+
+    // nodes is the JSON response. It could be a really big object. Do not perform recursion on it, so let's delete it. 
+    delete obj["nodes"];
+
     for (const key in obj) {
       if (key === "pageInfo") {
         return obj[key] as { hasNextPage: boolean; endCursor: string };
-      }
-
-      const result = findPageInfo(obj[key]);
-      if (result !== null) {
-        return result;
+      } else {
+        return findPageInfo(obj[key])
       }
     }
 
@@ -293,24 +326,22 @@ async function githubGraphqlRequestPaging<RESPONSE, RETURN>(
     );
   }
 
-  while (true) {
+  let getNextPage = true;
+  while (getNextPage) {
     const response = await githubGraphqlRequest<RESPONSE>(query, variables);
 
-    returnValue = processResponse(response.body);
-    if (returnValue !== null) {
-      break;
-    }
+    getNextPage = await processResponse(response.body);
 
     const pageInfo = findPageInfo(response.body);
 
+    log.debug(`pageInfo: ${JSON.stringify(pageInfo)}`);
+
     if (!pageInfo.hasNextPage) {
-      break;
+      getNextPage = false;
+    } else {
+      variables["endCursor"] = pageInfo.endCursor;
     }
-
-    variables["endCursor"] = pageInfo.endCursor;
   }
-
-  return returnValue;
 }
 
 export interface GitHubApi {

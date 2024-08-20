@@ -5,7 +5,8 @@ import { GitHubCommit } from "./lib/github-api.ts";
 Deno.test("getNextReleaseVersion initializes version correctly", async () => {
   const commits: GitHubCommit[] = [{
     sha: "",
-    commit: { message: "feat: initial commit" },
+    message: "feat: initial commit",
+    date: new Date()
   }];
   const result = await getNextReleaseVersion({
     commits,
@@ -17,7 +18,8 @@ Deno.test("getNextReleaseVersion initializes version correctly", async () => {
 Deno.test("getNextReleaseVersion bumps major version correctly", async () => {
   const commits: GitHubCommit[] = [{
     sha: "",
-    commit: { message: "feat!: add new authentication system" },
+    message: "feat!: add new authentication system",
+    date: new Date()
   }];
   const result = await getNextReleaseVersion({
     commits,
@@ -29,7 +31,8 @@ Deno.test("getNextReleaseVersion bumps major version correctly", async () => {
 Deno.test("getNextReleaseVersion bumps minor version correctly", async () => {
   const commits: GitHubCommit[] = [{
     sha: "",
-    commit: { message: "feat: add user profile page" },
+    message: "feat: add user profile page",
+    date: new Date()
   }];
   const result = await getNextReleaseVersion({
     commits,
@@ -41,7 +44,8 @@ Deno.test("getNextReleaseVersion bumps minor version correctly", async () => {
 Deno.test("getNextReleaseVersion bumps patch version correctly", async () => {
   const commits: GitHubCommit[] = [{
     sha: "",
-    commit: { message: "fix: fix login bug" },
+    message: "fix: fix login bug",
+    date: new Date()
   }];
   const result = await getNextReleaseVersion({
     commits,
@@ -61,9 +65,9 @@ Deno.test("getNextReleaseVersion does not bump version without commits", async (
 
 Deno.test("getNextReleaseVersion handles multiple commits with different bumps", async () => {
   const commits: GitHubCommit[] = [
-    { sha: "", commit: { message: "fix: fix login bug" } },
-    { sha: "", commit: { message: "feat: add user profile page" } },
-    { sha: "", commit: { message: "feat!: change API endpoints" } },
+    { sha: "", message: "fix: fix login bug", date: new Date() },
+    { sha: "", message: "feat: add user profile page", date: new Date() },
+    { sha: "", message: "feat!: change API endpoints", date: new Date() },
   ];
   const result = await getNextReleaseVersion({
     commits,
