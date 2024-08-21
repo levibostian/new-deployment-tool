@@ -17,7 +17,7 @@ const levels = {
 
 // Generic log function
 function log(level: keyof typeof levels, message: string) {
-  console.log(`${levels[level]}${message}${colors.reset}`);
+  console.log(`${levels[level]}${message}`);
 }
 
 /**
