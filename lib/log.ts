@@ -1,3 +1,5 @@
+import colors from 'npm:ansi-styles@6.2.1'
+
 // log.ts
 // This module provides a simple API for logging messages at different levels to GitHub Actions.
 
@@ -6,11 +8,11 @@
 
 // Log levels
 const levels = {
-  debug: "::debug::", // Debug messages, not shown by default in GitHub Actions logs.
-  warning: "::warning::", // Warning messages, displayed in yellow in the GitHub Actions logs.
-  error: "::error::", // Error messages, displayed in red, can be used to highlight errors.
-  notice: "::notice::", // Notice messages, a way to highlight important information, displayed in blue.
-  message: "", // Normal messages don't need a prefix, displayed in the standard log color.
+  debug: `::debug::${colors.white.open}`, // Debug messages, not shown by default in GitHub Actions logs.
+  warning: `::warning::${colors.white.open}`, // Lines are highlighted with yellow in the GitHub Actions logs.
+  error: `::error::${colors.white.open}`, // Lines are highlighted with red in the GitHub Actions logs.
+  notice: `${colors.blue.open}`, // Notice messages, a way to highlight important information, displayed in blue.
+  message: `${colors.white.open}`, 
 };
 
 // Generic log function

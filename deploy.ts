@@ -36,7 +36,7 @@ log.debug(
 );
 
 log.notice(
-  `Looking for the last release that was created on the current git branch: ${currentBranch}...`,
+  `🔍 Looking for the last release that was created on the current git branch: ${currentBranch}...`,
 );
 
 const api: GitHubApi = GitHubApiImpl
@@ -60,7 +60,7 @@ if (!lastRelease) {
 }
 
 log.notice(
-  `Retrieving all git commits that have been created since the last release...`,
+  `📜 Retrieving all git commits that have been created since the last release...`,
 );
 const listOfCommits = await getAllCommitsSinceGivenCommit({
   api,
@@ -84,7 +84,7 @@ log.debug(
 );
 
 log.notice(
-  `Analyzing each commit one-by-one to determine the next release version...`,
+  `📊 Analyzing each commit one-by-one to determine the next release version...`,
 );
 const nextReleaseVersion = await getNextReleaseVersion({
   commits: listOfCommits,
@@ -101,7 +101,7 @@ log.message(
   `After analyzing all commits, I have determined the next release version will be: ${nextReleaseVersion}`,
 );
 
-log.notice(`Creating a new release on GitHub for the new version...`);
+log.notice(`✏️ Creating a new release on GitHub for the new version, ${nextReleaseVersion}...`);
 if (isDryRunMode) {
   log.warning(
     `Dry run mode is enabled. I would have created a new release on GitHub with the new version: ${nextReleaseVersion}`,
@@ -115,3 +115,5 @@ await createGitHubRelease({
   tagName: nextReleaseVersion,
   commit: newestCommit,
 });
+
+log.notice(`New release created on GitHub! 🎉 https://github.com/${owner}/${repo}/releases/${nextReleaseVersion}`);
