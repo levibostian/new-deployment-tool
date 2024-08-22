@@ -5,6 +5,9 @@ inputs:
   github_token:
     description: 'GITHUB_TOKEN or a repo scoped PAT.'
     default: ${{ github.token }}
+  version:
+    description: 'Version of the CLI to use.'
+    default: 'main' # using branch name for now for easier deployments 
 
 runs:
   using: "composite"
@@ -16,5 +19,5 @@ runs:
 
     - name: Run deployment tool 
       # Deno's runtime permissions are a great feature. It would be nice to take advantage of it, however, it may not be possible with future features like running plugins. 
-      run: deno run --allow-env=GITHUB_REF,DRY_RUN,GITHUB_REPOSITORY,INPUT_GITHUB_TOKEN --allow-net="api.github.com" deploy.ts
+      run: deno run --allow-env=GITHUB_REF,DRY_RUN,GITHUB_REPOSITORY,INPUT_GITHUB_TOKEN --allow-net="api.github.com" https://raw.githubusercontent.com/levibostian/new-deployment-tool/${{ inputs.version }}/deploy.ts
       shell: bash 
