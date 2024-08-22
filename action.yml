@@ -22,7 +22,4 @@ runs:
       run: deno run --allow-env=GITHUB_REF,DRY_RUN,GITHUB_REPOSITORY,INPUT_GITHUB_TOKEN --allow-net="api.github.com" https://raw.githubusercontent.com/levibostian/new-deployment-tool/${{ inputs.version }}/deploy.ts
       shell: bash 
       env:
-        GITHUB_REF: ${{ env.GITHUB_REF }}
-        DRY_RUN: false         
-        GITHUB_REPOSITORY: ${{ env.GITHUB_REPOSITORY }}
         INPUT_GITHUB_TOKEN: ${{ inputs.github_token }}
