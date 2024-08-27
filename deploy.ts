@@ -101,6 +101,20 @@ log.message(
   `After analyzing all commits, I have determined the next release version will be: ${nextReleaseVersion}`,
 );
 
+log.notice(`🚀 Deploying the new version, ${nextReleaseVersion}...`);
+const deployCommands = Deno.env.get("INPUT_DEPLOY_COMMANDS")?.split("\n") ?? [];
+for (const command of deployCommands) {
+  log.message(`Running deployment command: ${command}`);
+
+  const { code } = await new Deno.Command(command, { stdout: "piped", stderr: "piped" }).output();
+
+  if (code !== 0) {
+    log.error(`Deploy command, ${command}, failed with error code ${code}.`);
+    log.error(`I will stop the deployment process now. Review the logs to see if this is an issue you need to fix before you retry the deployment again. Otherwise, simply retry running the deployment again later.`);
+    Deno.exit(1);
+  }
+}
+
 log.notice(`✏️ Creating a new release on GitHub for the new version, ${nextReleaseVersion}...`);
 if (isDryRunMode) {
   log.warning(
