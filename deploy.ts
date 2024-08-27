@@ -104,9 +104,12 @@ log.message(
 log.notice(`🚀 Deploying the new version, ${nextReleaseVersion}...`);
 const deployCommands = Deno.env.get("INPUT_DEPLOY_COMMANDS")?.split("\n") ?? [];
 for (const command of deployCommands) {
-  log.message(`Running deployment command: ${command}`);
+  log.message(`Running deployment command: ${command}...`);
 
-  const { code } = await new Deno.Command(command, { stdout: "piped", stderr: "piped" }).output();
+  const commandExec = command.split(" ")[0];
+  const commandArgs = command.split(" ").slice(1);
+
+  const { code } = await new Deno.Command(commandExec, { args: commandArgs, stdout: "inherit", stderr: "inherit" }).output();
 
   if (code !== 0) {
     log.error(`Deploy command, ${command}, failed with error code ${code}.`);
