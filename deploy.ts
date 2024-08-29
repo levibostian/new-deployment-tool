@@ -6,6 +6,8 @@ import {
 import { getNextReleaseVersion } from "./analyze-commits.ts";
 import * as log from "./lib/log.ts";
 import { GitHubApiImpl, GitHubApi } from "./lib/github-api.ts";
+import { exec } from "./lib/exec.ts";
+import { runDeploymentCommands } from "./lib/steps/deploy-commands.ts";
 
 log.notice(`Welcome to new-deployment-tool! 🚀`);
 log.message(
@@ -101,21 +103,9 @@ log.message(
   `After analyzing all commits, I have determined the next release version will be: ${nextReleaseVersion}`,
 );
 
-log.notice(`🚀 Deploying the new version, ${nextReleaseVersion}...`);
-const deployCommands = Deno.env.get("INPUT_DEPLOY_COMMANDS")?.split("\n") ?? [];
-for (const command of deployCommands) {
-  log.message(`Running deployment command: ${command}...`);
-
-  const commandExec = command.split(" ")[0];
-  const commandArgs = command.split(" ").slice(1);
-
-  const { code } = await new Deno.Command(commandExec, { args: commandArgs, stdout: "inherit", stderr: "inherit" }).output();
-
-  if (code !== 0) {
-    log.error(`Deploy command, ${command}, failed with error code ${code}.`);
-    log.error(`I will stop the deployment process now. Review the logs to see if this is an issue you need to fix before you retry the deployment again. Otherwise, simply retry running the deployment again later.`);
-    Deno.exit(1);
-  }
+const didDeployCommandsSucceed = await runDeploymentCommands({nextReleaseVersion, exec});
+if (!didDeployCommandsSucceed) {
+  Deno.exit(1);
 }
 
 log.notice(`✏️ Creating a new release on GitHub for the new version, ${nextReleaseVersion}...`);

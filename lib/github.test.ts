@@ -4,7 +4,6 @@ import {
 import { afterEach, describe, it } from "jsr:@std/testing@1/bdd";
 import {
   restore,
-  Stub,
   stub,
 } from "jsr:@std/testing@1/mock";
 import { GitHubApiImpl } from "./github-api.ts";
