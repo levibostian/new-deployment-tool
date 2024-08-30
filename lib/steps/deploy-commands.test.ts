@@ -26,7 +26,10 @@ describe("deployCommands", () => {
 
   it("given list of deploy commands, expect to execute them all", async () => {
     stub(exec, "run", async (args) => {
-      return 0
+      return {
+        exitCode: 0,
+        stdout: "success"
+      }
     });
 
     const commands = [
@@ -42,7 +45,10 @@ describe("deployCommands", () => {
 
   it("should return false, given a deploy command fails", async () => {
     stub(exec, "run", async (args) => {
-      return 1
+      return {
+        exitCode: 1,
+        stdout: "error"
+      }
     });
 
     const commands = [
