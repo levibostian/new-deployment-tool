@@ -1,0 +1,15 @@
+on: [pull_request]
+
+jobs:
+  print-pr-stack:
+    name: Display the PR stack
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # Required for PR comments
+    steps:
+      - uses: actions/checkout@v4
+      - uses: git-town/action@v1
+        with: 
+          main-branch: 'main'
+          perennial-regex: '^feat/.*$'
