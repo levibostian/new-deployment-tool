@@ -1,11 +1,12 @@
 import { Exec } from "../exec.ts";
 import * as log from "../log.ts";
+import { DeployCommandInput } from "./step-input-types/deploy.ts";
 
-export const runDeploymentCommands = async({nextReleaseVersion, exec}: {
-  nextReleaseVersion: string;
+export const runDeploymentCommands = async({input, exec}: {
+  input: DeployCommandInput;
   exec: Exec
 }): Promise<boolean> => {
-  log.notice(`🚀 Deploying the new version, ${nextReleaseVersion}...`);
+  log.notice(`🚀 Deploying the new version, ${input.nextVersionName}...`);
 
   // You can provide a list of commands in the github action workflow yaml file where the separator is a new line.
   // with:
@@ -16,7 +17,7 @@ export const runDeploymentCommands = async({nextReleaseVersion, exec}: {
   for (const command of deployCommands) {
     log.message(`Running deployment command: ${command}...`);
 
-    const code = await exec.run(command);
+    const code = await exec.run(command, input);
 
     if (code !== 0) {
       log.error(`Deploy command, ${command}, failed with error code ${code}.`);

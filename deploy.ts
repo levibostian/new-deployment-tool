@@ -8,6 +8,7 @@ import * as log from "./lib/log.ts";
 import { GitHubApiImpl, GitHubApi } from "./lib/github-api.ts";
 import { exec } from "./lib/exec.ts";
 import { runDeploymentCommands } from "./lib/steps/deploy-commands.ts";
+import { DeployCommandInput } from "./lib/steps/step-input-types/deploy.ts";
 
 log.notice(`Welcome to new-deployment-tool! 🚀`);
 log.message(
@@ -103,7 +104,16 @@ log.message(
   `After analyzing all commits, I have determined the next release version will be: ${nextReleaseVersion}`,
 );
 
-const didDeployCommandsSucceed = await runDeploymentCommands({nextReleaseVersion, exec});
+const deployCommandsInput: DeployCommandInput = {
+  gitCurrentBranch: currentBranch,
+  gitRepoOwner: owner,
+  gitRepoName: repo,
+  gitCommitsSinceLastRelease: listOfCommits,
+  nextVersionName: nextReleaseVersion,
+  isDryRun: isDryRunMode
+};
+
+const didDeployCommandsSucceed = await runDeploymentCommands({input: deployCommandsInput, exec});
 if (!didDeployCommandsSucceed) {
   Deno.exit(1);
 }
