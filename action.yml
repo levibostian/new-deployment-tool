@@ -23,7 +23,7 @@ runs:
 
     - name: Run deployment tool 
       # Deno's runtime permissions are a great feature. It would be nice to take advantage of it, however, it may not be possible with future features like running plugins. 
-      run: deno run --allow-env=GITHUB_REF,DRY_RUN,GITHUB_REPOSITORY,INPUT_GITHUB_TOKEN,INPUT_DEPLOY_COMMANDS --allow-net="api.github.com" --allow-run https://raw.githubusercontent.com/levibostian/new-deployment-tool/${{ inputs.version }}/deploy.ts
+      run: deno run --allow-env=GITHUB_REF,DRY_RUN,GITHUB_REPOSITORY,INPUT_GITHUB_TOKEN,INPUT_DEPLOY_COMMANDS,TMPDIR --allow-net="api.github.com" --allow-run --allow-write="$TMPDIR" https://raw.githubusercontent.com/levibostian/new-deployment-tool/${{ inputs.version }}/deploy.ts
       shell: bash 
       env:
         INPUT_GITHUB_TOKEN: ${{ inputs.github_token }}
