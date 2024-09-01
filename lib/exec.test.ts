@@ -20,7 +20,7 @@ Deno.test("given contextual input data, expect the executed command receives the
   assertEquals(stdout, JSON.stringify(givenPluginInput));
 })
 
-Deno.test("given command forgets or has a bug with outputting the data file, expect to get undefined for the output", async () => {
+Deno.test("given command forgets to write the output, expect to get undefined for the output", async () => {
   const { output } = await exec.run(`echo 'foo'`, givenPluginInput);
   
   assertEquals(output, undefined);

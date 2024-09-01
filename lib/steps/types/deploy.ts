@@ -9,6 +9,7 @@ export interface DeployCommandInput {
   isDryRun: boolean;
 }
 
+// Purposely making properties optional for convenience. 
 export interface DeployCommandOutput {
   filesToCommit?: string[];
 }
