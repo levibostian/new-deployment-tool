@@ -23,10 +23,10 @@ runs:
 
     - name: Run deployment tool 
       # Deno's runtime permissions are a great feature. It would be nice to take advantage of it, however, it may not be possible with future features like running plugins. 
-      # The use of mktemp is a workaround so I can use explicit runtime permissions. There isn't any easy way to use "/tmp" directory with Deno's runtime permissions. See: https://github.com/denoland/deno/issues/10392
-      run: MYDIR=$(mktemp -d) && TMPDIR=$MYDIR deno run --allow-env=GITHUB_REF,DRY_RUN,GITHUB_REPOSITORY,INPUT_GITHUB_TOKEN,INPUT_DEPLOY_COMMANDS,TMPDIR --allow-net="api.github.com" --allow-run --allow-read="$TMPDIR" --allow-write="$TMPDIR" https://raw.githubusercontent.com/levibostian/new-deployment-tool/${{ inputs.version }}/deploy.ts
+      #
+      # The directories we are giving permission to read and write to are the temp directories for all of the OSes that GitHub Actions supports. /tmp for linux and /var/folders for macOS.
+      run: deno run --allow-env=GITHUB_REF,DRY_RUN,GITHUB_REPOSITORY,INPUT_GITHUB_TOKEN,INPUT_DEPLOY_COMMANDS --allow-net="api.github.com" --allow-run --allow-read="/tmp,/var/folders" --allow-write="/tmp,/var/folders" https://raw.githubusercontent.com/levibostian/new-deployment-tool/${{ inputs.version }}/deploy.ts
       shell: bash 
       env:
         INPUT_GITHUB_TOKEN: ${{ inputs.github_token }}
         INPUT_DEPLOY_COMMANDS: ${{ inputs.deploy_commands }}
-        
