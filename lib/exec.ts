@@ -25,7 +25,7 @@ const run = async (command: string, input: DeployCommandInput): Promise<{exitCod
   // Since we are creating subprocesses to run the command, we are limited in how we can communicate with the command. 
   // One common way would be to ask the subprocess to stdout a JSON string that we simply read, but this tool tries to promote stdout 
   // as a way to communicate with the user, not the tool. So instead, we write the JSON to a file and pass the file path to the command.
-  const tempFilePathToCommunicateWithCommand = await Deno.makeTempFile({ prefix: "new-deployment-tool-", suffix: ".json" });
+  const tempFilePathToCommunicateWithCommand = await Deno.makeTempFile({ prefix: "new-deployment-tool-", suffix: ".json", dir: Deno.env.get("TMPDIR") });
   await Deno.writeTextFile(tempFilePathToCommunicateWithCommand, JSON.stringify(input));
 
   // We want to capture the stdout of the command but we also want to stream it to the console. By using streams, this allows us to 

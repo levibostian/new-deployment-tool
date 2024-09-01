@@ -40,8 +40,16 @@ jobs:
 
 # Development
 
-`GITHUB_REF="refs/heads/main" GITHUB_REPOSITORY="levibostian/Wendy-iOS" DRY_RUN=true INPUT_GITHUB_TOKEN="XXX" deno run --allow-all deploy.ts`
+When developing, it's recommended to write automated tests and run them to verify the tool works. We also suggest running the tool on a real github repository that is not a production app of yours to verify that the tool works in a real-world scenario. Beyond these 2 methods of testing, you can also run the tool locally on your machine. It's not the most convenient way to test yet, but it can help in certain situations. 
+
+* First, tell the tool what scripts to run for deployment: `export INPUT_DEPLOY_COMMANDS="python3 ../test-new-deployment-tool/test.py"`
+* Second, tell the tool what github repo you want to run against: `export GITHUB_REF="refs/heads/main"; export GITHUB_REPOSITORY="levibostian/Wendy-iOS"`
+* Then, run the tool. Use the `deno` command from `action.yml` and modify it a little bit to run it locally. 
+
+Replace the github URL with `deploy.ts` to tell Deno to run the local file not the remote file. 
+Add 2 extra environment variables... `DRY_RUN=true INPUT_GITHUB_TOKEN="XXX" deno...`
 
 # Tests
 
-`deno test`
+To run the automated test suite, view the `deno test` command in `./.github/workflows/tests.yml`. Run that on your local machine to run all tests. 
+

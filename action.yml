@@ -29,3 +29,4 @@ runs:
       env:
         INPUT_GITHUB_TOKEN: ${{ inputs.github_token }}
         INPUT_DEPLOY_COMMANDS: ${{ inputs.deploy_commands }}
+        
