@@ -59,6 +59,8 @@ const run = async (command: string, input: DeployCommandInput): Promise<{exitCod
     commandOutput = commandOutputUntyped;
   }
 
+  log.debug(`exit code, ${code}, command output: ${JSON.stringify(commandOutput)}`);
+
   return {
     exitCode: code,
     stdout: capturedStdout,
