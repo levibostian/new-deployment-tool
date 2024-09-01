@@ -8,7 +8,7 @@ import * as log from "./lib/log.ts";
 import { GitHubApiImpl, GitHubApi } from "./lib/github-api.ts";
 import { exec } from "./lib/exec.ts";
 import { runDeploymentCommands } from "./lib/steps/deploy-commands.ts";
-import { DeployCommandInput } from "./lib/steps/step-input-types/deploy.ts";
+import { DeployCommandInput } from "./lib/steps/types/deploy.ts";
 
 log.notice(`Welcome to new-deployment-tool! 🚀`);
 log.message(

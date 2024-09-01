@@ -8,7 +8,7 @@ import {
 } from "jsr:@std/testing@1/mock";
 import { exec } from "../exec.ts";
 import { runDeploymentCommands } from "./deploy-commands.ts";
-import { DeployCommandInput } from "./step-input-types/deploy.ts";
+import { DeployCommandInput } from "./types/deploy.ts";
 
 describe("deployCommands", () => {
   const givenPluginInput: DeployCommandInput = {
@@ -28,7 +28,8 @@ describe("deployCommands", () => {
     stub(exec, "run", async (args) => {
       return {
         exitCode: 0,
-        stdout: "success"
+        stdout: "success",
+        output: undefined
       }
     });
 
@@ -47,7 +48,8 @@ describe("deployCommands", () => {
     stub(exec, "run", async (args) => {
       return {
         exitCode: 1,
-        stdout: "error"
+        stdout: "error",
+        output: undefined
       }
     });
 

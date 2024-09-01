@@ -1,6 +1,6 @@
 import { Exec } from "../exec.ts";
 import * as log from "../log.ts";
-import { DeployCommandInput } from "./step-input-types/deploy.ts";
+import { DeployCommandInput } from "./types/deploy.ts";
 
 export const runDeploymentCommands = async({input, exec}: {
   input: DeployCommandInput;

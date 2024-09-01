@@ -1,9 +1,9 @@
-import { DeployCommandInput } from "./steps/step-input-types/deploy.ts";
+import { DeployCommandInput, DeployCommandOutput, isDeployCommandOutput } from "./steps/types/deploy.ts";
 import * as log from "./log.ts";
 import * as shellQuote from "npm:shell-quote@1.8.1";
 
 export interface Exec {
-  run: (command: string, input: DeployCommandInput) => Promise<{exitCode: number, stdout: string}>;
+  run: (command: string, input: DeployCommandInput) => Promise<{exitCode: number, stdout: string, output: DeployCommandOutput | undefined}>;
 }
 
 /*
@@ -16,7 +16,7 @@ We use a popular package to parse the string into the correct args list. See aut
 
 To make this function testable, we not only have the stdout and stderr be piped to the console, but we return it from this function so tests can verify the output of the command.
 */
-const run = async (command: string, input: DeployCommandInput): Promise<{exitCode: number, stdout: string}> => {
+const run = async (command: string, input: DeployCommandInput): Promise<{exitCode: number, stdout: string, output: DeployCommandOutput | undefined}> => {
   const execCommand = command.split(" ")[0]
   const execArgs = shellQuote.parse(command.replace(new RegExp(`^${execCommand}\\s*`), ''));
 
@@ -52,9 +52,17 @@ const run = async (command: string, input: DeployCommandInput): Promise<{exitCod
 
   const code = (await child.status).code;
 
+  let commandOutput: DeployCommandOutput | undefined = undefined
+
+  const commandOutputUntyped = JSON.parse(await Deno.readTextFile(tempFilePathToCommunicateWithCommand))
+  if (isDeployCommandOutput(commandOutputUntyped)) { // there is a chance that the command did not write to the file or they have a bug. 
+    commandOutput = commandOutputUntyped;
+  }
+
   return {
     exitCode: code,
     stdout: capturedStdout,
+    output: commandOutput,
   } 
 }
 
