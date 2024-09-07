@@ -9,7 +9,7 @@ export interface RunResult {
 }
 
 export interface Exec {
-  run: ({command, input}: {command: string, input: DeployCommandInput | undefined}) => Promise<RunResult>;
+  run: ({command, input}: {command: string, input: DeployCommandInput | undefined, envVars?: { [key: string]: string }}) => Promise<RunResult>;
 }
 
 /*
@@ -22,12 +22,12 @@ We use a popular package to parse the string into the correct args list. See aut
 
 To make this function testable, we not only have the stdout and stderr be piped to the console, but we return it from this function so tests can verify the output of the command.
 */
-const run = async ({command, input}: {command: string, input: DeployCommandInput | undefined}): Promise<{exitCode: number, stdout: string, output: DeployCommandOutput | undefined}> => {
+const run = async ({command, input, envVars}: {command: string, input: DeployCommandInput | undefined, envVars?: { [key: string]: string }}): Promise<{exitCode: number, stdout: string, output: DeployCommandOutput | undefined}> => {
   log.message(`Running command: ${command}...`);
 
   const execCommand = command.split(" ")[0]
   const execArgs = shellQuote.parse(command.replace(new RegExp(`^${execCommand}\\s*`), ''));
-  const environmentVariablesToPassToCommand: { [key: string]: string } = {};
+  const environmentVariablesToPassToCommand: { [key: string]: string } = envVars || {};
 
   // For some features to work, we need to communicate with the command. We need to send data to it and read data that it produces. 
   // We use JSON as the data format to communicate with the command since pretty much every language has built-in support for it. 
