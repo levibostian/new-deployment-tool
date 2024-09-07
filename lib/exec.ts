@@ -62,7 +62,7 @@ const run = async ({command, input, envVars}: {command: string, input: DeployCom
   child.stderr.pipeTo(new WritableStream({
     write(chunk) {
       const decodedChunk = new TextDecoder().decode(chunk);
-      log.error(decodedChunk);
+      log.message(decodedChunk);
     }
   }))
 
