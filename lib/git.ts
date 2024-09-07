@@ -20,7 +20,7 @@ const commit = async ({ exec, message, dryRun }: { exec: Exec, message: string, 
     // Resources to find this author info: 
     // https://github.com/orgs/community/discussions/26560
     // https://github.com/peter-evans/create-pull-request/blob/0c2a66fe4af462aa0761939bd32efbdd46592737/action.yml
-      const { exitCode } = await exec.run({ command: `git commit -m "${message}" --author="github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"${dryRun ? ' --dry-run' : ''}`, input: undefined });
+      const { exitCode } = await exec.run({ command: `GIT_AUTHOR_NAME="github-actions[bot]" GIT_COMMITTER_NAME="github-actions[bot]" GIT_AUTHOR_EMAIL="41898282+github-actions[bot]@users.noreply.github.com" GIT_COMMITTER_EMAIL="41898282+github-actions[bot]@users.noreply.github.com" git commit -m "${message}"${dryRun ? ' --dry-run' : ''}`, input: undefined });
       if (exitCode !== 0) {
         throw new Error(`Failed to commit changes to git: ${message}`);
       }
