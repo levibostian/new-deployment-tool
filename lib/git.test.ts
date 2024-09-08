@@ -45,6 +45,14 @@ describe("add", () => {
 })
 
 describe("commit", () => {
+  // For creating commits, we pass these environment variables to the command to set the author.
+  const expectedEnvVars = {
+    GIT_AUTHOR_NAME: "github-actions[bot]",
+    GIT_COMMITTER_NAME: "github-actions[bot]",
+    GIT_AUTHOR_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com",
+    GIT_COMMITTER_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
+  }
+
   afterEach(() => {
     restore();
   });
@@ -57,7 +65,7 @@ describe("commit", () => {
 
     await git.commit({ exec, message, dryRun: false });
 
-    assertSpyCall(execMock, 1, { args: [{command: `git commit -m "commit message" --author="github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"`, input: undefined }]});
+    assertSpyCall(execMock, 1, { args: [{command: `git commit -m "commit message"`, input: undefined, envVars: expectedEnvVars }]});
   })
 
   it("should throw an error, given the command fails", async () => {
@@ -78,10 +86,10 @@ describe("commit", () => {
     })
 
     await git.commit({ exec, message: "commit message", dryRun: true });
-    assertSpyCall(execMock, 1, { args: [{command: `git commit -m "commit message" --author="github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>" --dry-run`, input: undefined }]});
+    assertSpyCall(execMock, 1, { args: [{command: `git commit -m "commit message" --dry-run`, input: undefined, envVars: expectedEnvVars }]});
 
     await git.commit({ exec, message: "commit message", dryRun: false });
-    assertSpyCall(execMock, 4, { args: [{command: `git commit -m "commit message" --author="github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"`, input: undefined }]});
+    assertSpyCall(execMock, 4, { args: [{command: `git commit -m "commit message"`, input: undefined, envVars: expectedEnvVars }]});
   })
 
   it("should run commit if files are staged", async () => {
