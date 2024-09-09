@@ -8,15 +8,28 @@ import {
 } from "jsr:@std/testing@1/mock";
 import { exec } from "../exec.ts";
 import { runDeploymentCommands } from "./deploy-commands.ts";
+import { DeployCommandInput } from "./step-input-types/deploy.ts";
 
 describe("deployCommands", () => {
+  const givenPluginInput: DeployCommandInput = {
+    gitCurrentBranch: "main",
+    gitRepoOwner: "owner",
+    gitRepoName: "repo",
+    gitCommitsSinceLastRelease: [],
+    nextVersionName: "1.0.0",
+    isDryRun: false,
+  }
+
   afterEach(() => {
     restore();
   });
 
   it("given list of deploy commands, expect to execute them all", async () => {
     stub(exec, "run", async (args) => {
-      return 0
+      return {
+        exitCode: 0,
+        stdout: "success"
+      }
     });
 
     const commands = [
@@ -27,6 +40,31 @@ describe("deployCommands", () => {
 
     Deno.env.set("INPUT_DEPLOY_COMMANDS", commands.join("\n"));
     
-    assertEquals(await runDeploymentCommands({ nextReleaseVersion: "1.0.0", exec }), true);
+    assertEquals(await runDeploymentCommands({ input: givenPluginInput, exec }), true);
   });
+
+  it("should return false, given a deploy command fails", async () => {
+    stub(exec, "run", async (args) => {
+      return {
+        exitCode: 1,
+        stdout: "error"
+      }
+    });
+
+    const commands = [
+      "echo 'hello world'",
+      "echo 'hello world'",
+      "echo 'hello world'"
+    ];
+
+    Deno.env.set("INPUT_DEPLOY_COMMANDS", commands.join("\n"));
+    
+    assertEquals(await runDeploymentCommands({ input: givenPluginInput, exec }), false);
+  })
+
+  it("should return true, given no deploy commands", async () => {    
+    Deno.env.delete("INPUT_DEPLOY_COMMANDS");
+
+    assertEquals(await runDeploymentCommands({ input: givenPluginInput, exec }), true);
+  })
 });

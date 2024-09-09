@@ -1,15 +1,53 @@
+import { DeployCommandInput } from "./steps/step-input-types/deploy.ts";
+import * as log from "./log.ts";
+import * as shellQuote from "npm:shell-quote@1.8.1";
 
 export interface Exec {
-  run: (command: string) => Promise<number>;
+  run: (command: string, input: DeployCommandInput) => Promise<{exitCode: number, stdout: string}>;
 }
 
-const run = async (command: string): Promise<number> => {
-  const commandExec = command.split(" ")[0];
-  const commandArgs = command.split(" ").slice(1);
+/*
+Executes a command and returns the exit code and the stdout of the command.
 
-  const { code } = await new Deno.Command(commandExec, { args: commandArgs, stdout: "inherit", stderr: "inherit" }).output();
+The entire command is passed in as 1 string. This is for convenience but also because when used as a github action, the commands will be passed to the tool as a single string.
+Then, the command is split into the command and the arguments. This is required by Deno.Command.
+You cannot simply split the string by spaces to create the args list. Example, if you're given: `python3 -c "import os; print(os.getenv('INPUT'))"` we expect only 2 args: "-c" and "import ...". 
+We use a popular package to parse the string into the correct args list. See automated tests to verify that this works as expected. 
 
-  return code 
+To make this function testable, we not only have the stdout and stderr be piped to the console, but we return it from this function so tests can verify the output of the command.
+*/
+const run = async (command: string, input: DeployCommandInput): Promise<{exitCode: number, stdout: string}> => {
+  const execCommand = command.split(" ")[0]
+  const execArgs = shellQuote.parse(command.replace(new RegExp(`^${execCommand}\\s*`), ''));
+
+  // We want to capture the stdout of the command but we also want to stream it to the console. By using streams, this allows us to 
+  // output the stdout/stderr to the console in real-time instead of waiting for the command to finish before we see the output.
+  const process = new Deno.Command(execCommand, { args: execArgs, stdout: "piped", stderr: "piped", env: { "INPUT": JSON.stringify(input) } })
+
+  const child = process.spawn();
+
+  let capturedStdout = "";
+
+  child.stdout.pipeTo(new WritableStream({
+    write(chunk) {
+      const decodedChunk = new TextDecoder().decode(chunk);
+      log.message(decodedChunk);
+      capturedStdout += decodedChunk.trimEnd();
+    }
+  }))
+  child.stderr.pipeTo(new WritableStream({
+    write(chunk) {
+      const decodedChunk = new TextDecoder().decode(chunk);
+      log.error(decodedChunk);
+    }
+  }))
+
+  const code = (await child.status).code;
+
+  return {
+    exitCode: code,
+    stdout: capturedStdout,
+  } 
 }
 
 export const exec: Exec = {
