@@ -1,9 +1,9 @@
-import { DeployCommandInput } from "./steps/step-input-types/deploy.ts";
+import { DeployCommandInput, DeployCommandOutput, isDeployCommandOutput } from "./steps/types/deploy.ts";
 import * as log from "./log.ts";
 import * as shellQuote from "npm:shell-quote@1.8.1";
 
 export interface Exec {
-  run: (command: string, input: DeployCommandInput) => Promise<{exitCode: number, stdout: string}>;
+  run: (command: string, input: DeployCommandInput) => Promise<{exitCode: number, stdout: string, output: DeployCommandOutput | undefined}>;
 }
 
 /*
@@ -16,7 +16,7 @@ We use a popular package to parse the string into the correct args list. See aut
 
 To make this function testable, we not only have the stdout and stderr be piped to the console, but we return it from this function so tests can verify the output of the command.
 */
-const run = async (command: string, input: DeployCommandInput): Promise<{exitCode: number, stdout: string}> => {
+const run = async (command: string, input: DeployCommandInput): Promise<{exitCode: number, stdout: string, output: DeployCommandOutput | undefined}> => {
   const execCommand = command.split(" ")[0]
   const execArgs = shellQuote.parse(command.replace(new RegExp(`^${execCommand}\\s*`), ''));
 
@@ -26,7 +26,8 @@ const run = async (command: string, input: DeployCommandInput): Promise<{exitCod
   // One common way would be to ask the subprocess to stdout a JSON string that we simply read, but this tool tries to promote stdout 
   // as a way to communicate with the user, not the tool. So instead, we write the JSON to a file and pass the file path to the command.
   const tempFilePathToCommunicateWithCommand = await Deno.makeTempFile({ prefix: "new-deployment-tool-", suffix: ".json" });
-  await Deno.writeTextFile(tempFilePathToCommunicateWithCommand, JSON.stringify(input));
+  const inputDataFileContents = JSON.stringify(input);
+  await Deno.writeTextFile(tempFilePathToCommunicateWithCommand, inputDataFileContents);
 
   // We want to capture the stdout of the command but we also want to stream it to the console. By using streams, this allows us to 
   // output the stdout/stderr to the console in real-time instead of waiting for the command to finish before we see the output.
@@ -52,9 +53,21 @@ const run = async (command: string, input: DeployCommandInput): Promise<{exitCod
 
   const code = (await child.status).code;
 
+  let commandOutput: DeployCommandOutput | undefined = undefined
+
+  const outputDataFileContents = await Deno.readTextFile(tempFilePathToCommunicateWithCommand);
+  const commandOutputUntyped = JSON.parse(outputDataFileContents)
+  // As long as the command wrote something to the file and the type is correct, we will use it.
+  if (isDeployCommandOutput(commandOutputUntyped) && outputDataFileContents !== inputDataFileContents) { // there is a chance that the command did not write to the file or they have a bug. 
+    commandOutput = commandOutputUntyped;
+  }
+
+  log.debug(`exit code, ${code}, command output: ${JSON.stringify(commandOutput)}`);
+
   return {
     exitCode: code,
     stdout: capturedStdout,
+    output: commandOutput,
   } 
 }
 
