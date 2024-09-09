@@ -7,6 +7,7 @@ import { getNextReleaseVersion } from "./analyze-commits.ts";
 import * as log from "./lib/log.ts";
 import { GitHubApiImpl, GitHubApi } from "./lib/github-api.ts";
 import { exec } from "./lib/exec.ts";
+import { git } from "./lib/git.ts";
 import { runDeploymentCommands } from "./lib/steps/deploy-commands.ts";
 import { DeployCommandInput } from "./lib/steps/types/deploy.ts";
 
@@ -78,7 +79,7 @@ if (listOfCommits.length === 0) {
   );
   Deno.exit(0);
 }
-const newestCommit = listOfCommits[0];
+let newestCommit = listOfCommits[0];
 log.debug(`Newest commit found: ${JSON.stringify(newestCommit)}`);
 log.debug(
   `Oldest commit found: ${
@@ -113,9 +114,9 @@ const deployCommandsInput: DeployCommandInput = {
   isDryRun: isDryRunMode
 };
 
-const didDeployCommandsSucceed = await runDeploymentCommands({input: deployCommandsInput, exec});
-if (!didDeployCommandsSucceed) {
-  Deno.exit(1);
+const { gitCommitCreated } = await runDeploymentCommands({dryRun: isDryRunMode, input: deployCommandsInput, exec, git });
+if (gitCommitCreated) {
+  newestCommit = gitCommitCreated;
 }
 
 log.notice(`✏️ Creating a new release on GitHub for the new version, ${nextReleaseVersion}...`);
