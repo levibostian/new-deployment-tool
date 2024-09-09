@@ -17,7 +17,7 @@ jobs:
       run: deno test --allow-env --allow-run --allow-write --junit-path reports/junit.xml
 
     - name: Upload test results
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: junit-results
         path: reports/junit.xml
