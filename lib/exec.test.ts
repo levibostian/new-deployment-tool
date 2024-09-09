@@ -14,7 +14,7 @@ Deno.test("given contextual input data, expect the executed command receives the
     isDryRun: false,
   }
   
-  const { exitCode, stdout } = await exec.run(`python3 -c "import os; print(os.getenv('INPUT'))"`, givenPluginInput);
+  const { exitCode, stdout } = await exec.run(`python3 -c "import os; print(open(os.getenv('DATA_FILE_PATH'), 'r').read());"`, givenPluginInput);
 
   assertEquals(exitCode, 0);
   assertEquals(stdout, JSON.stringify(givenPluginInput));

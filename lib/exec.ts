@@ -20,9 +20,17 @@ const run = async (command: string, input: DeployCommandInput): Promise<{exitCod
   const execCommand = command.split(" ")[0]
   const execArgs = shellQuote.parse(command.replace(new RegExp(`^${execCommand}\\s*`), ''));
 
+  // For some features to work, we need to communicate with the command. We need to send data to it and read data that it produces. 
+  // We use JSON as the data format to communicate with the command since pretty much every language has built-in support for it. 
+  // Since we are creating subprocesses to run the command, we are limited in how we can communicate with the command. 
+  // One common way would be to ask the subprocess to stdout a JSON string that we simply read, but this tool tries to promote stdout 
+  // as a way to communicate with the user, not the tool. So instead, we write the JSON to a file and pass the file path to the command.
+  const tempFilePathToCommunicateWithCommand = await Deno.makeTempFile({ prefix: "new-deployment-tool-", suffix: ".json" });
+  await Deno.writeTextFile(tempFilePathToCommunicateWithCommand, JSON.stringify(input));
+
   // We want to capture the stdout of the command but we also want to stream it to the console. By using streams, this allows us to 
   // output the stdout/stderr to the console in real-time instead of waiting for the command to finish before we see the output.
-  const process = new Deno.Command(execCommand, { args: execArgs, stdout: "piped", stderr: "piped", env: { "INPUT": JSON.stringify(input) } })
+  const process = new Deno.Command(execCommand, { args: execArgs, stdout: "piped", stderr: "piped", env: { "DATA_FILE_PATH": tempFilePathToCommunicateWithCommand } })
 
   const child = process.spawn();
 
