@@ -25,7 +25,7 @@ runs:
       # Deno's runtime permissions are a great feature. It would be nice to take advantage of it, however, it may not be possible with future features like running plugins. 
       #
       # The directories we are giving permission to read and write to are the temp directories for all of the OSes that GitHub Actions supports. /tmp for linux and /var/folders for macOS.
-      run: deno run --allow-env=GITHUB_REF,DRY_RUN,GITHUB_REPOSITORY,INPUT_GITHUB_TOKEN,INPUT_DEPLOY_COMMANDS --allow-net="api.github.com" --allow-run --allow-read="/tmp,/var/folders" --allow-write="/tmp,/var/folders" https://raw.githubusercontent.com/levibostian/new-deployment-tool/${{ inputs.version }}/deploy.ts
+      run: deno run --allow-env=GITHUB_REF,DRY_RUN,GITHUB_REPOSITORY,INPUT_GITHUB_TOKEN,INPUT_DEPLOY_COMMANDS --allow-net="api.github.com" --allow-run --allow-read="/tmp,/var/folders" --allow-write="/tmp,/var/folders" https://raw.githubusercontent.com/levibostian/new-deployment-tool/${{ inputs.version }}/index.ts
       shell: bash 
       env:
         INPUT_GITHUB_TOKEN: ${{ inputs.github_token }}

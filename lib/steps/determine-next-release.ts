@@ -1,14 +1,24 @@
-import { SemanticVersion } from "./lib/semantic-version.ts";
-import { versionBumpForCommitBasedOnConventionalCommit } from "./lib/conventional-commits.ts";
-import * as log from "./lib/log.ts";
-import { GitHubCommit } from "./lib/github-api.ts";
+import { GitHubCommit, GitHubRelease } from "../github-api.ts";
+import { SemanticVersion } from "../semantic-version.ts";
+import { versionBumpForCommitBasedOnConventionalCommit } from "../conventional-commits.ts";
+import * as log from "../log.ts";
 
-export const getNextReleaseVersion = async (
-  { commits, lastReleaseVersion }: {
+export interface DetermineNextReleaseStep {
+  getNextReleaseVersion({ commits, latestRelease }: {
     commits: GitHubCommit[];
-    lastReleaseVersion: string | undefined;
+    latestRelease: GitHubRelease | null;
   },
-): Promise<string | undefined> => {
+): Promise<string | undefined>
+}
+
+export class DetermineNextReleaseStepImpl implements DetermineNextReleaseStep {
+  async getNextReleaseVersion({ commits, latestRelease }: {
+    commits: GitHubCommit[];
+    latestRelease: GitHubRelease | null;
+  },
+): Promise<string | undefined> {
+  const lastReleaseVersion = latestRelease?.tag.name;
+
   const lastReleaseSemanticVersion = new SemanticVersion(
     lastReleaseVersion || "0.0.0",
   );
@@ -39,4 +49,5 @@ export const getNextReleaseVersion = async (
   } else if (versionBumpsForEachCommit.includes("patch")) {
     return lastReleaseSemanticVersion.bumpPatch();
   }
-};
+}
+}
