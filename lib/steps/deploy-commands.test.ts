@@ -1,17 +1,14 @@
-import {
-  assertEquals,
-  assertRejects,
-} from "jsr:@std/assert@1";
+import { assertEquals, assertRejects } from "jsr:@std/assert@1";
 import { afterEach, beforeEach, describe, it } from "jsr:@std/testing@1/bdd";
 import {
+  assertSpyCall,
+  assertSpyCallArg,
   restore,
   stub,
-  assertSpyCallArg,
-  assertSpyCall
 } from "jsr:@std/testing@1/mock";
 import { exec } from "../exec.ts";
 import { runDeploymentCommands } from "./deploy-commands.ts";
-import { DeployCommandInput } from "./types/deploy.ts"; 
+import { DeployCommandInput } from "./types/deploy.ts";
 import { git } from "../git.ts";
 
 const givenPluginInput: DeployCommandInput = {
@@ -21,7 +18,7 @@ const givenPluginInput: DeployCommandInput = {
   gitCommitsSinceLastRelease: [],
   nextVersionName: "1.0.0",
   isDryRun: false,
-}
+};
 
 describe("run deploy commands", () => {
   afterEach(() => {
@@ -33,29 +30,34 @@ describe("run deploy commands", () => {
       return {
         exitCode: 0,
         stdout: "success",
-        output: undefined
-      }
+        output: undefined,
+      };
     });
     stub(git, "commit", async (args) => {
       return {
         sha: "123",
         message: "success",
-        date: new Date()
-      }
-    })
+        date: new Date(),
+      };
+    });
     stub(git, "push", async (args) => {
-      return 
-    })
+      return;
+    });
 
     const commands = [
       "echo 'hello world'",
       "echo 'hello world'",
-      "echo 'hello world'"
+      "echo 'hello world'",
     ];
 
     Deno.env.set("INPUT_DEPLOY_COMMANDS", commands.join("\n"));
-    
-    await runDeploymentCommands({ dryRun: false, input: givenPluginInput, exec, git })
+
+    await runDeploymentCommands({
+      dryRun: false,
+      input: givenPluginInput,
+      exec,
+      git,
+    });
 
     assertEquals(runStub.calls.length, 3);
   });
@@ -65,45 +67,55 @@ describe("run deploy commands", () => {
       return {
         exitCode: 1,
         stdout: "error",
-        output: undefined
-      }
+        output: undefined,
+      };
     });
 
     const commands = [
       "echo 'hello world'",
       "echo 'hello world'",
-      "echo 'hello world'"
+      "echo 'hello world'",
     ];
 
     Deno.env.set("INPUT_DEPLOY_COMMANDS", commands.join("\n"));
-    
-    assertRejects(async () => {
-      await runDeploymentCommands({ dryRun: false, input: givenPluginInput, exec, git })
-    })
-  })
 
-  it("should run normally and succeed, given no deploy commands", async () => {    
+    assertRejects(async () => {
+      await runDeploymentCommands({
+        dryRun: false,
+        input: givenPluginInput,
+        exec,
+        git,
+      });
+    });
+  });
+
+  it("should run normally and succeed, given no deploy commands", async () => {
     Deno.env.delete("INPUT_DEPLOY_COMMANDS");
 
     stub(git, "commit", async (args) => {
       return {
         sha: "123",
         message: "success",
-        date: new Date()
-      }
-    })
+        date: new Date(),
+      };
+    });
     stub(git, "push", async (args) => {
-      return 
-    })
+      return;
+    });
 
-    await runDeploymentCommands({ dryRun: false, input: givenPluginInput, exec, git })
-  })
+    await runDeploymentCommands({
+      dryRun: false,
+      input: givenPluginInput,
+      exec,
+      git,
+    });
+  });
 });
 
 describe("git operations", () => {
   beforeEach(() => {
     Deno.env.delete("INPUT_DEPLOY_COMMANDS"); // deploy commands are not needed for these tests
-  })
+  });
 
   afterEach(() => {
     restore();
@@ -115,39 +127,44 @@ describe("git operations", () => {
         exitCode: 0,
         stdout: "success",
         output: {
-          filesToCommit: ["file1", "file2"]
-        }
-      }
+          filesToCommit: ["file1", "file2"],
+        },
+      };
     });
     const gitAddMock = stub(git, "add", async (args) => {
-      return 
-    })
+      return;
+    });
     stub(git, "commit", async (args) => {
       return {
         sha: "123",
         message: "success",
-        date: new Date()
-      }
-    })
+        date: new Date(),
+      };
+    });
     stub(git, "push", async (args) => {
-      return 
-    })
+      return;
+    });
 
     const commands = [
       "echo 'hello world'",
       "echo 'hello world'",
-      "echo 'hello world'"
+      "echo 'hello world'",
     ];
 
     Deno.env.set("INPUT_DEPLOY_COMMANDS", commands.join("\n"));
 
-    await runDeploymentCommands({ dryRun: false, input: givenPluginInput, exec, git })
+    await runDeploymentCommands({
+      dryRun: false,
+      input: givenPluginInput,
+      exec,
+      git,
+    });
 
     assertSpyCall(gitAddMock, 0, {
-      args: [{ exec, filePath: "file1" }]
+      args: [{ exec, filePath: "file1" }],
     });
     assertSpyCall(gitAddMock, 1, {
-      args: [{ exec, filePath: "file2" }]
+      args: [{ exec, filePath: "file2" }],
     });
   });
 
@@ -156,34 +173,44 @@ describe("git operations", () => {
       return {
         sha: "123",
         message: "success",
-        date: new Date()
-      }
-    })
+        date: new Date(),
+      };
+    });
     const gitPushMock = stub(git, "push", async (args) => {
-      return 
-    })
+      return;
+    });
 
-    // First, test when dry-run mode enabled 
-    await runDeploymentCommands({ dryRun: true, input: givenPluginInput, exec, git })
+    // First, test when dry-run mode enabled
+    await runDeploymentCommands({
+      dryRun: true,
+      input: givenPluginInput,
+      exec,
+      git,
+    });
 
     assertSpyCall(gitCommitMock, 0, {
-      args: [{ exec, message: `Deploy version 1.0.0`, dryRun: true }]
+      args: [{ exec, message: `Deploy version 1.0.0`, dryRun: true }],
     });
     assertSpyCall(gitPushMock, 0, {
-      args: [{ exec, branch: "main", dryRun: true }]
+      args: [{ exec, branch: "main", dryRun: true }],
     });
 
     // Next, test when dry-run mode disabled
-    await runDeploymentCommands({ dryRun: false, input: givenPluginInput, exec, git })
+    await runDeploymentCommands({
+      dryRun: false,
+      input: givenPluginInput,
+      exec,
+      git,
+    });
 
     assertSpyCall(gitCommitMock, 1, {
-      args: [{ exec, message: `Deploy version 1.0.0`, dryRun: false }]
+      args: [{ exec, message: `Deploy version 1.0.0`, dryRun: false }],
     });
     assertSpyCall(gitPushMock, 1, {
-      args: [{ exec, branch: "main", dryRun: false }]
+      args: [{ exec, branch: "main", dryRun: false }],
     });
   });
-})
+});
 
 describe("function return values", () => {
   afterEach(() => {
@@ -194,53 +221,69 @@ describe("function return values", () => {
     const givenCommitCreated = {
       sha: "123",
       message: "success",
-      date: new Date()
-    }
+      date: new Date(),
+    };
 
     stub(exec, "run", async (args) => {
       return {
         exitCode: 0,
         stdout: "success",
-        output: undefined
-      }
+        output: undefined,
+      };
     });
     stub(git, "commit", async (args) => {
-      return givenCommitCreated
-    })
+      return givenCommitCreated;
+    });
     stub(git, "push", async (args) => {
-      return 
-    })
+      return;
+    });
 
-    const commands = [      
-      "echo 'hello world'"
+    const commands = [
+      "echo 'hello world'",
     ];
 
     Deno.env.set("INPUT_DEPLOY_COMMANDS", commands.join("\n"));
 
-    assertEquals(await runDeploymentCommands({ dryRun: false, input: givenPluginInput, exec, git }), {      
-      gitCommitCreated: givenCommitCreated
-    })
-  })
+    assertEquals(
+      await runDeploymentCommands({
+        dryRun: false,
+        input: givenPluginInput,
+        exec,
+        git,
+      }),
+      {
+        gitCommitCreated: givenCommitCreated,
+      },
+    );
+  });
 
   it("should not return git commit if command fails", async () => {
     stub(exec, "run", async (args) => {
       return {
         exitCode: 1,
         stdout: "error",
-        output: undefined
-      }
+        output: undefined,
+      };
     });
 
-    const commands = [      
-      "echo 'hello world'"
+    const commands = [
+      "echo 'hello world'",
     ];
 
     Deno.env.set("INPUT_DEPLOY_COMMANDS", commands.join("\n"));
 
     assertRejects(async () => {
-      assertEquals(await runDeploymentCommands({ dryRun: false, input: givenPluginInput, exec, git }), {
-        gitCommitCreated: undefined
-      })
-    })
-  })
-})
+      assertEquals(
+        await runDeploymentCommands({
+          dryRun: false,
+          input: givenPluginInput,
+          exec,
+          git,
+        }),
+        {
+          gitCommitCreated: undefined,
+        },
+      );
+    });
+  });
+});

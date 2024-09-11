@@ -14,28 +14,28 @@ export interface GitHubRelease {
 export interface GitHubCommit {
   sha: string;
   message: string;
-  date: Date 
+  date: Date;
 }
 
 interface GitHubCommitApiResponse {
   sha: string;
   commit: {
     message: string;
-    committer: { 
-      date: string
-    }
-  }
+    committer: {
+      date: string;
+    };
+  };
 }
 
 // Get a list of github releases.
 // The github rest api does not return the git tag (and commit sha) for a release. You would need to also call the tags endpoint and match the tag name to the release name (painful).
 // But I found you can use the github graphql api to get this information in 1 call.
-const getTagsWithGitHubReleases = async(
+const getTagsWithGitHubReleases = async (
   { owner, repo, processReleases, numberOfResults }: {
     owner: string;
     repo: string;
     processReleases: (data: GitHubRelease[]) => Promise<boolean>;
-    numberOfResults?: number
+    numberOfResults?: number;
   },
 ): Promise<void> => {
   // Gets list of tags that also have a github release made for it.
@@ -88,26 +88,30 @@ query($owner: String!, $repo: String!, $endCursor: String, $numberOfResults: Int
             hasNextPage: boolean;
           };
         };
-      }
+      };
     };
-  }>(graphqlQuery, { owner, repo, numberOfResults: numberOfResults || 100 }, (response) => {
-    const releases: GitHubRelease[] = response.data.repository.releases.nodes
-      .filter((release) => !release.isDraft) // only look at releases that are not drafts
-      .map((release) => {
-        return {
-          tag: {
-            name: release.tag.name,
-            commit: {
-              sha: release.tag.target.oid,
+  }>(
+    graphqlQuery,
+    { owner, repo, numberOfResults: numberOfResults || 100 },
+    (response) => {
+      const releases: GitHubRelease[] = response.data.repository.releases.nodes
+        .filter((release) => !release.isDraft) // only look at releases that are not drafts
+        .map((release) => {
+          return {
+            tag: {
+              name: release.tag.name,
+              commit: {
+                sha: release.tag.target.oid,
+              },
             },
-          },
-          name: release.name,
-          created_at: new Date(release.createdAt),
-        };
-      });
+            name: release.name,
+            created_at: new Date(release.createdAt),
+          };
+        });
 
-    return processReleases(releases);
-  });
+      return processReleases(releases);
+    },
+  );
 };
 
 const getCommitsForBranch = async <T>(
@@ -120,15 +124,15 @@ const getCommitsForBranch = async <T>(
 ) => {
   return await githubApiRequestPaging<GitHubCommitApiResponse[]>(
     `https://api.github.com/repos/${owner}/${repo}/commits?sha=${branch}&per_page=100`,
-    async(apiResponse) => {
+    async (apiResponse) => {
       return await processCommits(apiResponse.map((response) => {
         return {
           sha: response.sha,
           message: response.commit.message,
-          date: new Date(response.commit.committer.date)
-        }
-      }))
-    }
+          date: new Date(response.commit.committer.date),
+        };
+      }));
+    },
   );
 };
 
@@ -255,12 +259,12 @@ const githubGraphqlRequest = async <T>(query: string, variables: object) => {
   const headers = {
     "Authorization": `Bearer ${Deno.env.get("INPUT_GITHUB_TOKEN")}`,
     "Content-Type": "application/json",
-  }
+  };
 
   const body = JSON.stringify({
     query,
     variables,
-  })
+  });
 
   log.debug(
     `GitHub graphql request: headers: ${
@@ -271,7 +275,7 @@ const githubGraphqlRequest = async <T>(query: string, variables: object) => {
   const response = await fetch("https://api.github.com/graphql", {
     method: "POST",
     headers,
-    body
+    body,
   });
 
   if (!response.ok) {
@@ -306,18 +310,20 @@ async function githubGraphqlRequestPaging<RESPONSE>(
   processResponse: (data: RESPONSE) => Promise<boolean>,
 ): Promise<void> {
   // deno-lint-ignore no-explicit-any
-  function findPageInfo(_obj: any): { hasNextPage: boolean; endCursor: string } {
+  function findPageInfo(
+    _obj: any,
+  ): { hasNextPage: boolean; endCursor: string } {
     // Create a shallow copy of the object to avoid modifying the original
     const obj = { ..._obj };
 
-    // nodes is the JSON response. It could be a really big object. Do not perform recursion on it, so let's delete it. 
+    // nodes is the JSON response. It could be a really big object. Do not perform recursion on it, so let's delete it.
     delete obj["nodes"];
 
     for (const key in obj) {
       if (key === "pageInfo") {
         return obj[key] as { hasNextPage: boolean; endCursor: string };
       } else {
-        return findPageInfo(obj[key])
+        return findPageInfo(obj[key]);
       }
     }
 
