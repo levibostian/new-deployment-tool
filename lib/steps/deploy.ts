@@ -18,12 +18,20 @@ import { Git } from "../git.ts";
  * 2. Convenience for the user. No need for them to run all of these commands themselves. Including setting the author. They may forget something.
  * 3. If the user is running multiple commands for deployment, there is a chance that multiple commands create commits. That just makes this tool more complex.
  */
-export const runDeploymentCommands = async ({ dryRun, input, exec, git }: {
+export interface DeployStep {
+  runDeploymentCommands({ dryRun, input }: {
+    dryRun: boolean;
+    input: DeployCommandInput;
+  }): Promise<GitHubCommit | null>
+}
+
+export class DeployStepImpl implements DeployStep {
+  constructor(private exec: Exec, private git: Git) {}
+
+  async runDeploymentCommands({ dryRun, input }: {
   dryRun: boolean;
-  input: DeployCommandInput;
-  exec: Exec;
-  git: Git;
-}): Promise<{ gitCommitCreated?: GitHubCommit }> => {
+  input: DeployCommandInput;  
+}): Promise<GitHubCommit | null> {
   log.notice(`🚀 Deploying the new version, ${input.nextVersionName}...`);
 
   // You can provide a list of commands in the github action workflow yaml file where the separator is a new line.
@@ -36,7 +44,7 @@ export const runDeploymentCommands = async ({ dryRun, input, exec, git }: {
   for (const command of deployCommands) {
     log.message(`Running deployment command: ${command}...`);
 
-    const { exitCode, output } = await exec.run({ command, input });
+    const { exitCode, output } = await this.exec.run({ command, input });
 
     if (exitCode !== 0) {
       log.error(
@@ -53,16 +61,17 @@ export const runDeploymentCommands = async ({ dryRun, input, exec, git }: {
 
     for (const file of output?.filesToCommit ?? []) {
       log.message(`Adding file to git: ${file}`);
-      await git.add({ exec, filePath: file });
+      await this.git.add({ exec: this.exec, filePath: file });
     }
   }
 
-  const gitCommitCreated = await git.commit({
-    exec,
+  const gitCommitCreated = await this.git.commit({
+    exec: this.exec,
     message: `Deploy version ${input.nextVersionName}`,
     dryRun,
   });
-  await git.push({ exec, branch: input.gitCurrentBranch, dryRun });
+  await this.git.push({ exec: this.exec, branch: input.gitCurrentBranch, dryRun });
 
-  return { gitCommitCreated };
-};
+  return gitCommitCreated;
+}
+}
