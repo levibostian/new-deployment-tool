@@ -17,7 +17,9 @@ const githubApi = GitHubApiImpl;
 
 await run({
   getLatestReleaseStep: new GetLatestReleaseStepImpl(githubApi),
-  getCommitsSinceLatestReleaseStep: new GetCommitsSinceLatestReleaseStepImpl(githubApi),
+  getCommitsSinceLatestReleaseStep: new GetCommitsSinceLatestReleaseStepImpl(
+    githubApi,
+  ),
   determineNextReleaseStep: new DetermineNextReleaseStepImpl(),
   deployStep: new DeployStepImpl(exec, git),
   createNewReleaseStep: new CreateNewReleaseStepImpl(githubApi),
