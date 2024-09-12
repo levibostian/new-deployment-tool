@@ -1,8 +1,6 @@
 import {GetLatestReleaseStep,} from "./lib/steps/get-latest-release.ts";
 import * as log from "./lib/log.ts";
-import { exec } from "./lib/exec.ts";
-import { git } from "./lib/git.ts";
-import { runDeploymentCommands } from "./lib/steps/deploy-commands.ts";
+import { DeployStep } from "./lib/steps/deploy.ts";
 import { DeployCommandInput } from "./lib/steps/types/deploy.ts";
 import { GetCommitsSinceLatestReleaseStep } from "./lib/steps/get-commits-since-latest-release.ts";
 import { DetermineNextReleaseStep } from "./lib/steps/determine-next-release.ts";
@@ -12,11 +10,13 @@ export const run = async ({
   getLatestReleaseStep,
   getCommitsSinceLatestReleaseStep,
   determineNextReleaseStep,
+  deployStep,
   createNewReleaseStep,
 }: {
   getLatestReleaseStep: GetLatestReleaseStep;
   getCommitsSinceLatestReleaseStep: GetCommitsSinceLatestReleaseStep;
   determineNextReleaseStep: DetermineNextReleaseStep
+  deployStep: DeployStep
   createNewReleaseStep: CreateNewReleaseStep
 }): Promise<void> => {
   log.notice(`Welcome to new-deployment-tool! 🚀`);
@@ -121,11 +121,9 @@ export const run = async ({
     isDryRun: isDryRunMode,
   };
 
-  const { gitCommitCreated } = await runDeploymentCommands({
+  const gitCommitCreated = await deployStep.runDeploymentCommands({
     dryRun: isDryRunMode,
     input: deployCommandsInput,
-    exec,
-    git,
   });
   if (gitCommitCreated) {
     newestCommit = gitCommitCreated;

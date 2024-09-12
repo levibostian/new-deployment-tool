@@ -7,7 +7,7 @@ import {
   stub,
 } from "jsr:@std/testing@1/mock";
 import { exec } from "../exec.ts";
-import { runDeploymentCommands } from "./deploy-commands.ts";
+import { DeployStep, DeployStepImpl } from "./deploy.ts";
 import { DeployCommandInput } from "./types/deploy.ts";
 import { git } from "../git.ts";
 
@@ -52,11 +52,9 @@ describe("run deploy commands", () => {
 
     Deno.env.set("INPUT_DEPLOY_COMMANDS", commands.join("\n"));
 
-    await runDeploymentCommands({
+    await new DeployStepImpl(exec, git).runDeploymentCommands({
       dryRun: false,
       input: givenPluginInput,
-      exec,
-      git,
     });
 
     assertEquals(runStub.calls.length, 3);
@@ -80,11 +78,9 @@ describe("run deploy commands", () => {
     Deno.env.set("INPUT_DEPLOY_COMMANDS", commands.join("\n"));
 
     assertRejects(async () => {
-      await runDeploymentCommands({
+      await new DeployStepImpl(exec, git).runDeploymentCommands({
         dryRun: false,
-        input: givenPluginInput,
-        exec,
-        git,
+        input: givenPluginInput,        
       });
     });
   });
@@ -103,11 +99,9 @@ describe("run deploy commands", () => {
       return;
     });
 
-    await runDeploymentCommands({
+    await new DeployStepImpl(exec, git).runDeploymentCommands({
       dryRun: false,
-      input: givenPluginInput,
-      exec,
-      git,
+      input: givenPluginInput,    
     });
   });
 });
@@ -153,11 +147,9 @@ describe("git operations", () => {
 
     Deno.env.set("INPUT_DEPLOY_COMMANDS", commands.join("\n"));
 
-    await runDeploymentCommands({
+    await new DeployStepImpl(exec, git).runDeploymentCommands({
       dryRun: false,
-      input: givenPluginInput,
-      exec,
-      git,
+      input: givenPluginInput,      
     });
 
     assertSpyCall(gitAddMock, 0, {
@@ -181,11 +173,9 @@ describe("git operations", () => {
     });
 
     // First, test when dry-run mode enabled
-    await runDeploymentCommands({
+    await new DeployStepImpl(exec, git).runDeploymentCommands({
       dryRun: true,
-      input: givenPluginInput,
-      exec,
-      git,
+      input: givenPluginInput,      
     });
 
     assertSpyCall(gitCommitMock, 0, {
@@ -196,11 +186,9 @@ describe("git operations", () => {
     });
 
     // Next, test when dry-run mode disabled
-    await runDeploymentCommands({
+    await new DeployStepImpl(exec, git).runDeploymentCommands({
       dryRun: false,
-      input: givenPluginInput,
-      exec,
-      git,
+      input: givenPluginInput,      
     });
 
     assertSpyCall(gitCommitMock, 1, {
@@ -245,15 +233,11 @@ describe("function return values", () => {
     Deno.env.set("INPUT_DEPLOY_COMMANDS", commands.join("\n"));
 
     assertEquals(
-      await runDeploymentCommands({
+      await new DeployStepImpl(exec, git).runDeploymentCommands({
         dryRun: false,
-        input: givenPluginInput,
-        exec,
-        git,
+        input: givenPluginInput,        
       }),
-      {
-        gitCommitCreated: givenCommitCreated,
-      },
+      givenCommitCreated,
     );
   });
 
@@ -274,15 +258,11 @@ describe("function return values", () => {
 
     assertRejects(async () => {
       assertEquals(
-        await runDeploymentCommands({
+        await new DeployStepImpl(exec, git).runDeploymentCommands({
           dryRun: false,
           input: givenPluginInput,
-          exec,
-          git,
         }),
-        {
-          gitCommitCreated: undefined,
-        },
+        undefined,
       );
     });
   });
