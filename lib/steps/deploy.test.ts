@@ -80,7 +80,7 @@ describe("run deploy commands", () => {
     assertRejects(async () => {
       await new DeployStepImpl(exec, git).runDeploymentCommands({
         dryRun: false,
-        input: givenPluginInput,        
+        input: givenPluginInput,
       });
     });
   });
@@ -101,7 +101,7 @@ describe("run deploy commands", () => {
 
     await new DeployStepImpl(exec, git).runDeploymentCommands({
       dryRun: false,
-      input: givenPluginInput,    
+      input: givenPluginInput,
     });
   });
 });
@@ -149,7 +149,7 @@ describe("git operations", () => {
 
     await new DeployStepImpl(exec, git).runDeploymentCommands({
       dryRun: false,
-      input: givenPluginInput,      
+      input: givenPluginInput,
     });
 
     assertSpyCall(gitAddMock, 0, {
@@ -175,7 +175,7 @@ describe("git operations", () => {
     // First, test when dry-run mode enabled
     await new DeployStepImpl(exec, git).runDeploymentCommands({
       dryRun: true,
-      input: givenPluginInput,      
+      input: givenPluginInput,
     });
 
     assertSpyCall(gitCommitMock, 0, {
@@ -188,7 +188,7 @@ describe("git operations", () => {
     // Next, test when dry-run mode disabled
     await new DeployStepImpl(exec, git).runDeploymentCommands({
       dryRun: false,
-      input: givenPluginInput,      
+      input: givenPluginInput,
     });
 
     assertSpyCall(gitCommitMock, 1, {
@@ -235,7 +235,7 @@ describe("function return values", () => {
     assertEquals(
       await new DeployStepImpl(exec, git).runDeploymentCommands({
         dryRun: false,
-        input: givenPluginInput,        
+        input: givenPluginInput,
       }),
       givenCommitCreated,
     );

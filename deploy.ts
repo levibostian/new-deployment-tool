@@ -1,4 +1,4 @@
-import {GetLatestReleaseStep,} from "./lib/steps/get-latest-release.ts";
+import { GetLatestReleaseStep } from "./lib/steps/get-latest-release.ts";
 import * as log from "./lib/log.ts";
 import { DeployStep } from "./lib/steps/deploy.ts";
 import { DeployCommandInput } from "./lib/steps/types/deploy.ts";
@@ -15,9 +15,9 @@ export const run = async ({
 }: {
   getLatestReleaseStep: GetLatestReleaseStep;
   getCommitsSinceLatestReleaseStep: GetCommitsSinceLatestReleaseStep;
-  determineNextReleaseStep: DetermineNextReleaseStep
-  deployStep: DeployStep
-  createNewReleaseStep: CreateNewReleaseStep
+  determineNextReleaseStep: DetermineNextReleaseStep;
+  deployStep: DeployStep;
+  createNewReleaseStep: CreateNewReleaseStep;
 }): Promise<void> => {
   log.notice(`Welcome to new-deployment-tool! 🚀`);
   log.message(
@@ -83,7 +83,7 @@ export const run = async ({
     log.warning(
       `No commits have been created since the last release. This means that there is no new code to deploy. I'll quit now.`,
     );
-    Deno.exit(0);
+    return;
   }
   let newestCommit = listOfCommits[0];
   log.debug(`Newest commit found: ${JSON.stringify(newestCommit)}`);
@@ -97,16 +97,17 @@ export const run = async ({
     `📊 Analyzing each commit one-by-one to determine the next release version...`,
   );
 
-  const nextReleaseVersion = await determineNextReleaseStep.getNextReleaseVersion({
-    commits: listOfCommits,
-    latestRelease: lastRelease,
-  });
+  const nextReleaseVersion = await determineNextReleaseStep
+    .getNextReleaseVersion({
+      commits: listOfCommits,
+      latestRelease: lastRelease,
+    });
 
-  if (nextReleaseVersion === undefined) {
+  if (!nextReleaseVersion) {
     log.warning(
       `After analyzing all commits, no version bump is required. This means that there is no new code to deploy. I'll quit now.`,
     );
-    Deno.exit(0);
+    return;
   }
   log.message(
     `After analyzing all commits, I have determined the next release version will be: ${nextReleaseVersion}`,
@@ -136,7 +137,7 @@ export const run = async ({
     log.warning(
       `Dry run mode is enabled. I would have created a new release on GitHub with the new version: ${nextReleaseVersion}`,
     );
-    Deno.exit(0);
+    return;
   }
   await createNewReleaseStep.createNewRelease({
     owner,

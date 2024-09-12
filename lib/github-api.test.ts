@@ -13,6 +13,22 @@ export const GitHubReleaseFake: GitHubRelease = {
   created_at: new Date("2021-01-01T00:00:00Z"),
 };
 
+export class GitHubCommitFake implements GitHubCommit {
+  sha: string;
+  message: string;
+  date: Date;
+
+  constructor({
+    sha = "abc123",
+    message = "chore: does not trigger a release",
+    date = new Date("2021-01-01T00:00:00Z"),
+  }: Partial<GitHubCommit> = {}) {
+    this.sha = sha;
+    this.message = message;
+    this.date = date;
+  }
+}
+
 /**
  * The tests in this file are meant to be like a playground and not true automated tests.
  * These functions are setup so you can quickly call functions against real github repositories. Great during development.

@@ -9,10 +9,12 @@ Deno.test("getNextReleaseVersion initializes version correctly", async () => {
     message: "feat: initial commit",
     date: new Date(),
   }];
-  const result = await new DetermineNextReleaseStepImpl().getNextReleaseVersion({
-    commits,
-    latestRelease: null,
-  });
+  const result = await new DetermineNextReleaseStepImpl().getNextReleaseVersion(
+    {
+      commits,
+      latestRelease: null,
+    },
+  );
   assertEquals(result, "1.0.0");
 });
 
@@ -22,10 +24,15 @@ Deno.test("getNextReleaseVersion bumps major version correctly", async () => {
     message: "feat!: add new authentication system",
     date: new Date(),
   }];
-  const result = await new DetermineNextReleaseStepImpl().getNextReleaseVersion({
-    commits,
-    latestRelease: {...GitHubReleaseFake, tag: {...GitHubReleaseFake.tag, name: "1.2.3"}},
-  });
+  const result = await new DetermineNextReleaseStepImpl().getNextReleaseVersion(
+    {
+      commits,
+      latestRelease: {
+        ...GitHubReleaseFake,
+        tag: { ...GitHubReleaseFake.tag, name: "1.2.3" },
+      },
+    },
+  );
   assertEquals(result, "2.0.0");
 });
 
@@ -35,10 +42,15 @@ Deno.test("getNextReleaseVersion bumps minor version correctly", async () => {
     message: "feat: add user profile page",
     date: new Date(),
   }];
-  const result = await new DetermineNextReleaseStepImpl().getNextReleaseVersion({
-    commits,
-    latestRelease: {...GitHubReleaseFake, tag: {...GitHubReleaseFake.tag, name: "1.2.3"}},
-  });
+  const result = await new DetermineNextReleaseStepImpl().getNextReleaseVersion(
+    {
+      commits,
+      latestRelease: {
+        ...GitHubReleaseFake,
+        tag: { ...GitHubReleaseFake.tag, name: "1.2.3" },
+      },
+    },
+  );
   assertEquals(result, "1.3.0");
 });
 
@@ -48,20 +60,30 @@ Deno.test("getNextReleaseVersion bumps patch version correctly", async () => {
     message: "fix: fix login bug",
     date: new Date(),
   }];
-  const result = await new DetermineNextReleaseStepImpl().getNextReleaseVersion({
-    commits,
-    latestRelease: {...GitHubReleaseFake, tag: {...GitHubReleaseFake.tag, name: "1.2.3"}},
-  });
+  const result = await new DetermineNextReleaseStepImpl().getNextReleaseVersion(
+    {
+      commits,
+      latestRelease: {
+        ...GitHubReleaseFake,
+        tag: { ...GitHubReleaseFake.tag, name: "1.2.3" },
+      },
+    },
+  );
   assertEquals(result, "1.2.4");
 });
 
 Deno.test("getNextReleaseVersion does not bump version without commits", async () => {
   const commits: GitHubCommit[] = [];
-  const result = await new DetermineNextReleaseStepImpl().getNextReleaseVersion({
-    commits,
-    latestRelease: {...GitHubReleaseFake, tag: {...GitHubReleaseFake.tag, name: "1.2.3"}},
-  });
-  assertEquals(result, undefined);
+  const result = await new DetermineNextReleaseStepImpl().getNextReleaseVersion(
+    {
+      commits,
+      latestRelease: {
+        ...GitHubReleaseFake,
+        tag: { ...GitHubReleaseFake.tag, name: "1.2.3" },
+      },
+    },
+  );
+  assertEquals(result, null);
 });
 
 Deno.test("getNextReleaseVersion handles multiple commits with different bumps", async () => {
@@ -70,9 +92,14 @@ Deno.test("getNextReleaseVersion handles multiple commits with different bumps",
     { sha: "", message: "feat: add user profile page", date: new Date() },
     { sha: "", message: "feat!: change API endpoints", date: new Date() },
   ];
-  const result = await new DetermineNextReleaseStepImpl().getNextReleaseVersion({
-    commits,
-    latestRelease: {...GitHubReleaseFake, tag: {...GitHubReleaseFake.tag, name: "1.2.3"}},
-  });
+  const result = await new DetermineNextReleaseStepImpl().getNextReleaseVersion(
+    {
+      commits,
+      latestRelease: {
+        ...GitHubReleaseFake,
+        tag: { ...GitHubReleaseFake.tag, name: "1.2.3" },
+      },
+    },
+  );
   assertEquals(result, "2.0.0");
 });
