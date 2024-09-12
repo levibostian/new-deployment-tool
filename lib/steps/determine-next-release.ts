@@ -8,15 +8,14 @@ export interface DetermineNextReleaseStep {
     commits: GitHubCommit[];
     latestRelease: GitHubRelease | null;
   },
-): Promise<string | undefined>
+): Promise<string | null>
 }
 
 export class DetermineNextReleaseStepImpl implements DetermineNextReleaseStep {
   async getNextReleaseVersion({ commits, latestRelease }: {
     commits: GitHubCommit[];
     latestRelease: GitHubRelease | null;
-  },
-): Promise<string | undefined> {
+  }): Promise<string | null> {
   const lastReleaseVersion = latestRelease?.tag.name;
 
   const lastReleaseSemanticVersion = new SemanticVersion(
@@ -49,5 +48,7 @@ export class DetermineNextReleaseStepImpl implements DetermineNextReleaseStep {
   } else if (versionBumpsForEachCommit.includes("patch")) {
     return lastReleaseSemanticVersion.bumpPatch();
   }
+
+  return null;
 }
 }

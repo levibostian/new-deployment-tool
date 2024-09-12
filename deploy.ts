@@ -83,7 +83,7 @@ export const run = async ({
     log.warning(
       `No commits have been created since the last release. This means that there is no new code to deploy. I'll quit now.`,
     );
-    Deno.exit(0);
+    return 
   }
   let newestCommit = listOfCommits[0];
   log.debug(`Newest commit found: ${JSON.stringify(newestCommit)}`);
@@ -102,11 +102,11 @@ export const run = async ({
     latestRelease: lastRelease,
   });
 
-  if (nextReleaseVersion === undefined) {
+  if (!nextReleaseVersion) {
     log.warning(
       `After analyzing all commits, no version bump is required. This means that there is no new code to deploy. I'll quit now.`,
     );
-    Deno.exit(0);
+    return 
   }
   log.message(
     `After analyzing all commits, I have determined the next release version will be: ${nextReleaseVersion}`,
@@ -136,7 +136,7 @@ export const run = async ({
     log.warning(
       `Dry run mode is enabled. I would have created a new release on GitHub with the new version: ${nextReleaseVersion}`,
     );
-    Deno.exit(0);
+    return 
   }
   await createNewReleaseStep.createNewRelease({
     owner,

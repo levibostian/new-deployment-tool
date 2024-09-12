@@ -21,7 +21,7 @@ describe("run the tool", () => {
     const givenLatestCommitOnBranch = new GitHubCommitFake({message: "feat: trigger a release", sha: "trigger-release"});
     const givenCreatedCommitDuringDeploy = new GitHubCommitFake({message: "chore: commit created during deploy", sha: "commit-created-during-deploy"});
 
-    const {createNewReleaseStepMock} = await setupTestEnvironmentAndRun({commitsSinceLatestRelease: [givenLatestCommitOnBranch], gitCommitCreatedDuringDeploy: givenCreatedCommitDuringDeploy});
+    const {createNewReleaseStepMock} = await setupTestEnvironmentAndRun({commitsSinceLatestRelease: [givenLatestCommitOnBranch], gitCommitCreatedDuringDeploy: givenCreatedCommitDuringDeploy, nextReleaseVersion: "1.0.0"});
 
     assertEquals(createNewReleaseStepMock.calls[0].args[0].commit.sha, givenCreatedCommitDuringDeploy.sha);
   });
@@ -29,10 +29,24 @@ describe("run the tool", () => {
   it("given no new commits created during deployment, expect create release from latest commit found on github", async () => {
     const givenLatestCommitOnBranch = new GitHubCommitFake({message: "feat: trigger a release", sha: "trigger-release"});
 
-    const {createNewReleaseStepMock} = await setupTestEnvironmentAndRun({commitsSinceLatestRelease: [givenLatestCommitOnBranch], gitCommitCreatedDuringDeploy: undefined});
+    const {createNewReleaseStepMock} = await setupTestEnvironmentAndRun({commitsSinceLatestRelease: [givenLatestCommitOnBranch], gitCommitCreatedDuringDeploy: undefined, nextReleaseVersion: "1.0.0"});
 
     assertEquals(createNewReleaseStepMock.calls[0].args[0].commit.sha, givenLatestCommitOnBranch.sha);
   });
+
+  it("given no commits created since last deployment, expect to not run a new deployment", async () => {
+    const {determineNextReleaseStepMock} = await setupTestEnvironmentAndRun({commitsSinceLatestRelease: []});
+
+    // Exit early, before running the next step after getting list of commits since last deployment 
+    assertEquals(determineNextReleaseStepMock.calls.length, 0);
+  });
+
+  it("given no commits trigger a release, expect to not run a new deployment", async () => {
+    const {deployStepMock} = await setupTestEnvironmentAndRun({commitsSinceLatestRelease: [new GitHubCommitFake()], nextReleaseVersion: undefined});
+
+    // Exit early, before running the next step after getting list of commits since last deployment 
+    assertEquals(deployStepMock.calls.length, 0);
+  })  
 });
 
 const setupTestEnvironmentAndRun = async({latestRelease, commitsSinceLatestRelease, nextReleaseVersion, gitCommitCreatedDuringDeploy}: {latestRelease?: GitHubRelease, commitsSinceLatestRelease?: GitHubCommit[], nextReleaseVersion?: string, gitCommitCreatedDuringDeploy?: GitHubCommit}) => {
@@ -52,7 +66,7 @@ const setupTestEnvironmentAndRun = async({latestRelease, commitsSinceLatestRelea
 
   const determineNextReleaseStep = new DetermineNextReleaseStepImpl();
   const determineNextReleaseStepMock = stub(determineNextReleaseStep, "getNextReleaseVersion", async () => {
-    return nextReleaseVersion || "1.0.0"
+    return nextReleaseVersion || null
   });
 
   const deployStep = new DeployStepImpl(exec, git);

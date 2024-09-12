@@ -61,7 +61,7 @@ Deno.test("getNextReleaseVersion does not bump version without commits", async (
     commits,
     latestRelease: {...GitHubReleaseFake, tag: {...GitHubReleaseFake.tag, name: "1.2.3"}},
   });
-  assertEquals(result, undefined);
+  assertEquals(result, null);
 });
 
 Deno.test("getNextReleaseVersion handles multiple commits with different bumps", async () => {
