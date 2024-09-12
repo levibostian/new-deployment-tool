@@ -21,11 +21,12 @@ describe("getLatestReleaseForBranch", () => {
     });
 
     assertEquals(
-      await new GetLatestReleaseStepImpl(GitHubApiImpl).getLatestReleaseForBranch({
-        owner: "owner",
-        repo: "repo",
-        branch: "branch",
-      }),
+      await new GetLatestReleaseStepImpl(GitHubApiImpl)
+        .getLatestReleaseForBranch({
+          owner: "owner",
+          repo: "repo",
+          branch: "branch",
+        }),
       null,
     );
   });
@@ -42,11 +43,12 @@ describe("getLatestReleaseForBranch", () => {
     });
 
     assertEquals(
-      await new GetLatestReleaseStepImpl(GitHubApiImpl).getLatestReleaseForBranch({
-        owner: "owner",
-        repo: "repo",
-        branch: "branch",
-      }),
+      await new GetLatestReleaseStepImpl(GitHubApiImpl)
+        .getLatestReleaseForBranch({
+          owner: "owner",
+          repo: "repo",
+          branch: "branch",
+        }),
       null,
     );
   });
@@ -90,11 +92,12 @@ describe("getLatestReleaseForBranch", () => {
     });
 
     assertEquals(
-      await new GetLatestReleaseStepImpl(GitHubApiImpl).getLatestReleaseForBranch({
-        owner: "owner",
-        repo: "repo",
-        branch: "branch",
-      }),
+      await new GetLatestReleaseStepImpl(GitHubApiImpl)
+        .getLatestReleaseForBranch({
+          owner: "owner",
+          repo: "repo",
+          branch: "branch",
+        }),
       null,
     );
   });
@@ -155,11 +158,12 @@ describe("getLatestReleaseForBranch", () => {
     });
 
     assertEquals(
-      await new GetLatestReleaseStepImpl(GitHubApiImpl).getLatestReleaseForBranch({
-        owner: "owner",
-        repo: "repo",
-        branch: "branch",
-      }),
+      await new GetLatestReleaseStepImpl(GitHubApiImpl)
+        .getLatestReleaseForBranch({
+          owner: "owner",
+          repo: "repo",
+          branch: "branch",
+        }),
       {
         tag: { name: "", commit: { sha: "commit-2" } },
         name: "",

@@ -19,9 +19,9 @@ export class GitHubCommitFake implements GitHubCommit {
   date: Date;
 
   constructor({
-    sha = 'abc123',
-    message = 'chore: does not trigger a release',
-    date = new Date("2021-01-01T00:00:00Z")
+    sha = "abc123",
+    message = "chore: does not trigger a release",
+    date = new Date("2021-01-01T00:00:00Z"),
   }: Partial<GitHubCommit> = {}) {
     this.sha = sha;
     this.message = message;
