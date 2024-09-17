@@ -1,32 +1,18 @@
 import { assertEquals } from "jsr:@std/assert@1";
 import { afterEach, describe, it } from "jsr:@std/testing@1/bdd";
 import { restore, stub } from "jsr:@std/testing@1/mock";
-import {
-  GetLatestReleaseStep,
-  GetLatestReleaseStepImpl,
-} from "./lib/steps/get-latest-release.ts";
+import { GetLatestReleaseStep } from "./lib/steps/get-latest-release.ts";
 import { run } from "./deploy.ts";
-import {
-  GitHubApiImpl,
-  GitHubCommit,
-  GitHubRelease,
-} from "./lib/github-api.ts";
+import { GitHubCommit, GitHubRelease } from "./lib/github-api.ts";
 import { GitHubCommitFake, GitHubReleaseFake } from "./lib/github-api.test.ts";
 import {
   GetCommitsSinceLatestReleaseStep,
-  GetCommitsSinceLatestReleaseStepImpl,
 } from "./lib/steps/get-commits-since-latest-release.ts";
 import {
   DetermineNextReleaseStep,
-  DetermineNextReleaseStepImpl,
 } from "./lib/steps/determine-next-release.ts";
-import {
-  CreateNewReleaseStep,
-  CreateNewReleaseStepImpl,
-} from "./lib/steps/create-new-release.ts";
-import { DeployStep, DeployStepImpl } from "./lib/steps/deploy.ts";
-import { exec } from "./lib/exec.ts";
-import { git } from "./lib/git.ts";
+import { CreateNewReleaseStep } from "./lib/steps/create-new-release.ts";
+import { DeployStep } from "./lib/steps/deploy.ts";
 
 describe("run the tool", () => {
   afterEach(() => {
@@ -108,7 +94,7 @@ const setupTestEnvironmentAndRun = async ({
   Deno.env.set("GITHUB_REPOSITORY", "levibostian/new-deployment-tool");
   Deno.env.set("DRY_RUN", "false");
 
-  const getLatestReleaseStep = new GetLatestReleaseStepImpl(GitHubApiImpl);
+  const getLatestReleaseStep = {} as GetLatestReleaseStep;
   const getLatestReleaseStepMock = stub(
     getLatestReleaseStep,
     "getLatestReleaseForBranch",
@@ -118,7 +104,7 @@ const setupTestEnvironmentAndRun = async ({
   );
 
   const getCommitsSinceLatestReleaseStep =
-    new GetCommitsSinceLatestReleaseStepImpl(GitHubApiImpl);
+    {} as GetCommitsSinceLatestReleaseStep;
   const getCommitsSinceLatestReleaseStepMock = stub(
     getCommitsSinceLatestReleaseStep,
     "getAllCommitsSinceGivenCommit",
@@ -127,7 +113,7 @@ const setupTestEnvironmentAndRun = async ({
     },
   );
 
-  const determineNextReleaseStep = new DetermineNextReleaseStepImpl();
+  const determineNextReleaseStep = {} as DetermineNextReleaseStep;
   const determineNextReleaseStepMock = stub(
     determineNextReleaseStep,
     "getNextReleaseVersion",
@@ -136,12 +122,12 @@ const setupTestEnvironmentAndRun = async ({
     },
   );
 
-  const deployStep = new DeployStepImpl(exec, git);
+  const deployStep = {} as DeployStep;
   const deployStepMock = stub(deployStep, "runDeploymentCommands", async () => {
     return gitCommitCreatedDuringDeploy || null;
   });
 
-  const createNewReleaseStep = new CreateNewReleaseStepImpl(GitHubApiImpl);
+  const createNewReleaseStep = {} as CreateNewReleaseStep;
   const createNewReleaseStepMock = stub(
     createNewReleaseStep,
     "createNewRelease",
