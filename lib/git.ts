@@ -1,5 +1,6 @@
 import { Exec } from "./exec.ts";
 import { GitHubCommit } from "./github-api.ts";
+import * as log from "./log.ts";
 
 export interface Git {
   add: ({ exec, filePath }: { exec: Exec; filePath: string }) => Promise<void>;
@@ -7,8 +8,18 @@ export interface Git {
     { exec, message, dryRun }: { exec: Exec; message: string; dryRun: boolean },
   ) => Promise<GitHubCommit>;
   push: (
+    { exec, branch, forcePush, dryRun }: { exec: Exec; branch: string; forcePush: boolean; dryRun: boolean },
+  ) => Promise<void>;
+  areAnyFilesStaged: ({ exec }: { exec: Exec }) => Promise<boolean>;
+  deleteBranch: (
     { exec, branch, dryRun }: { exec: Exec; branch: string; dryRun: boolean },
   ) => Promise<void>;
+  checkoutBranch: (
+    { exec, branch, createBranchIfNotExist }: { exec: Exec; branch: string; createBranchIfNotExist: boolean },
+  ) => Promise<void>;
+  doesLocalBranchExist: (
+    { exec, branch }: { exec: Exec; branch: string },
+  ) => Promise<boolean>;
 }
 
 const add = async (
@@ -52,10 +63,17 @@ const commit = async (
 };
 
 const push = async (
-  { exec, branch, dryRun }: { exec: Exec; branch: string; dryRun: boolean },
+  { exec, branch, forcePush, dryRun }: { exec: Exec; branch: string; forcePush: boolean; dryRun: boolean },
 ): Promise<void> => {
+  const gitCommand = `git push origin ${branch}${forcePush ? " --force" : ""}`;
+
+  if (dryRun) {
+    log.message(`[Dry Run] ${gitCommand}`);
+    return;
+  }
+
   const { exitCode } = await exec.run({
-    command: `git push origin ${branch}${dryRun ? " --dry-run" : ""}`,
+    command: gitCommand,
     input: undefined,
   });
   if (exitCode !== 0) {
@@ -93,8 +111,53 @@ const getLatestCommit = async (
   return { sha, message, date: new Date(dateString) };
 };
 
+const deleteBranch = async (
+  { exec, branch, dryRun }: { exec: Exec; branch: string; dryRun: boolean },
+): Promise<void> => {
+  const deleteLocalBranchCommand = `git branch -D ${branch}`;
+
+  if (dryRun) {
+    log.message(`[Dry Run] ${deleteLocalBranchCommand}`);
+  } else {
+    const { exitCode } = await exec.run({
+      command: deleteLocalBranchCommand,
+      input: undefined,
+    });
+    if (exitCode !== 0) {
+      throw new Error(`Failed to delete branch from local: ${branch}`);
+    }
+  }
+}
+
+const checkoutBranch = async (
+  { exec, branch, createBranchIfNotExist }: { exec: Exec; branch: string; createBranchIfNotExist: boolean },
+): Promise<void> => {
+  const { exitCode } = await exec.run({
+    command: `git checkout ${createBranchIfNotExist ? "-b " : ""}${branch}`,
+    input: undefined,
+  });
+  if (exitCode !== 0) {
+    throw new Error(`Failed to checkout branch: ${branch}`);
+  }
+}
+
+const doesLocalBranchExist = async (
+  { exec, branch }: { exec: Exec; branch: string },
+): Promise<boolean> => {
+  const { exitCode } = await exec.run({
+    command: `git show-ref --verify --quiet refs/heads/${branch}`,
+    input: undefined,
+  });
+
+  return exitCode === 0;
+}
+
 export const git: Git = {
   add,
   commit,
-  push,
+  push,  
+  areAnyFilesStaged,
+  deleteBranch,
+  checkoutBranch,
+  doesLocalBranchExist
 };

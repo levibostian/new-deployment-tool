@@ -2,20 +2,15 @@ import {
   assertEquals,
   assertFalse,
   assertRejects,
-  assertStringIncludes,
-  assertThrows,
 } from "jsr:@std/assert@1";
-import { afterEach, beforeEach, describe, it } from "jsr:@std/testing@1/bdd";
+import { afterEach, describe, it } from "jsr:@std/testing@1/bdd";
 import {
   assertSpyCall,
-  assertSpyCallArg,
-  assertSpyCalls,
   restore,
   stub,
 } from "jsr:@std/testing@1/mock";
 import { exec, RunResult } from "./exec.ts";
 import { git } from "./git.ts";
-import { GitHubCommit } from "./github-api.ts";
 
 describe("add", () => {
   afterEach(() => {
@@ -189,15 +184,15 @@ describe("push", () => {
     restore();
   });
 
-  it("should execute the expected command, given a branch", async () => {
+  it("should execute the expected push command, given a branch", async () => {
     const execMock = stub(exec, "run", async (args) => {
       return { exitCode: 0, stdout: "success", output: undefined };
     });
-    const branch = "main";
+    const branch = "foo";
 
-    await git.push({ exec, branch, dryRun: false });
+    await git.push({ exec, branch, dryRun: false, forcePush: false });
     assertSpyCall(execMock, 0, {
-      args: [{ command: `git push origin main`, input: undefined }],
+      args: [{ command: `git push origin foo`, input: undefined }],
     });
   });
 
@@ -207,23 +202,30 @@ describe("push", () => {
     });
 
     assertRejects(async () => {
-      await git.push({ exec, branch: "main", dryRun: false });
+      await git.push({ exec, branch: "main", dryRun: false, forcePush: false });
     }, Error);
   });
 
-  it("should run command in dry-mode when enabled", async () => {
+  it("should not run command when dryRun mode enabled", async () => {
     const execMock = stub(exec, "run", async (args) => {
       return { exitCode: 0, stdout: "success", output: undefined };
     });
 
-    await git.push({ exec, branch: "main", dryRun: true });
-    assertSpyCall(execMock, 0, {
-      args: [{ command: `git push origin main --dry-run`, input: undefined }],
+    await git.push({ exec, branch: "main", dryRun: true, forcePush: false });
+
+    assertEquals(execMock.calls.length, 0);     
+  });
+
+  it("should generate expected git command, given force push", async () => {
+    const expectedCommand = `git push origin main --force`;
+
+    const execMock = stub(exec, "run", async (args) => {
+      return { exitCode: 0, stdout: "success", output: undefined };
     });
 
-    await git.push({ exec, branch: "main", dryRun: false });
-    assertSpyCall(execMock, 1, {
-      args: [{ command: `git push origin main`, input: undefined }],
+    await git.push({ exec, branch: "main", dryRun: false, forcePush: true });
+    assertSpyCall(execMock, 0, {
+      args: [{ command: expectedCommand, input: undefined }],
     });
   });
 });
@@ -270,3 +272,134 @@ const getExecMock = ({
     throw Error("unexpected command");
   });
 };
+
+describe("areAnyFilesStaged", () => {
+  afterEach(() => {
+    restore();
+  });
+
+  it("should return true, given files are staged", async () => {
+    stub(exec, "run", async (args) => {
+      return { exitCode: 0, stdout: "file.txt\n", output: undefined };
+    });
+
+    const actual = await git.areAnyFilesStaged({ exec });
+    assertEquals(actual, true);
+  });
+
+  it("should return false, given no files are staged", async () => {
+    stub(exec, "run", async (args) => {
+      return { exitCode: 0, stdout: "", output: undefined };
+    });
+
+    const actual = await git.areAnyFilesStaged({ exec });
+    assertEquals(actual, false);
+  });
+
+  it("should throw an error, given the command fails", async () => {
+    stub(exec, "run", async (args) => {
+      return { exitCode: 1, stdout: "error", output: undefined };
+    });
+
+    assertRejects(async () => {
+      await git.areAnyFilesStaged({ exec });
+    }, Error);
+  });
+})
+
+describe("deleteBranch", () => {
+  afterEach(() => {
+    restore();
+  });
+
+  it("should execute the expected command, given a branch", async () => {
+    const execMock = stub(exec, "run", async (args) => {
+      return { exitCode: 0, stdout: "success", output: undefined };
+    });
+
+    await git.deleteBranch({ exec, branch: "foo", dryRun: false });
+
+    assertSpyCall(execMock, 0, {
+      args: [{ command: `git branch -D foo`, input: undefined }],
+    });
+  });
+
+  it("should throw an error, given the command fails", async () => {
+    stub(exec, "run", async (args) => {
+      return { exitCode: 1, stdout: "error", output: undefined };
+    });
+
+    assertRejects(async () => {
+      await git.deleteBranch({ exec, branch: "main", dryRun: false });
+    }, Error);
+  });
+
+  it("should not run command when dryRun mode enabled", async () => {
+    const execMock = stub(exec, "run", async (args) => {
+      return { exitCode: 0, stdout: "success", output: undefined };
+    });
+
+    await git.deleteBranch({ exec, branch: "main", dryRun: true });
+
+    assertEquals(execMock.calls.length, 0);     
+  })
+})
+
+describe("checkoutBranch", () => {
+  afterEach(() => {
+    restore();
+  });
+
+  it("should execute the expected command", async () => {
+    const execMock = stub(exec, "run", async (args) => {
+      return { exitCode: 0, stdout: "success", output: undefined };
+    });
+
+    await git.checkoutBranch({ exec, branch: "main", createBranchIfNotExist: false });
+
+    assertSpyCall(execMock, 0, {
+      args: [{ command: `git checkout main`, input: undefined }],
+    });
+
+    // Now, test with createBranchIfNotExist
+    await git.checkoutBranch({ exec, branch: "main", createBranchIfNotExist: true });
+
+    assertSpyCall(execMock, 1, {
+      args: [{ command: `git checkout -b main`, input: undefined }],
+    });
+  });
+
+  it("should throw an error, given the command fails", async () => {
+    stub(exec, "run", async (args) => {
+      return { exitCode: 1, stdout: "error", output: undefined };
+    });
+
+    assertRejects(async () => {
+      await git.checkoutBranch({ exec, branch: "main", createBranchIfNotExist: false });
+    }, Error);
+  });
+})
+
+describe("doesLocalBranchExist", () => {
+  afterEach(() => {
+    restore();
+  });
+
+  it("should return true, given the branch exists", async () => {
+    stub(exec, "run", async (args) => {
+      return { exitCode: 0, stdout: "", output: undefined };
+    });
+
+    const actual = await git.doesLocalBranchExist({ exec, branch: "main" });
+    assertEquals(actual, true);
+  });
+
+  it("should return false, given the branch does not exist", async () => {
+    stub(exec, "run", async (args) => {
+      return { exitCode: 1, stdout: "", output: undefined };
+    });
+
+    const actual = await git.doesLocalBranchExist({ exec, branch: "main" });
+    assertEquals(actual, false);
+  });
+})

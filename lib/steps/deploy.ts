@@ -1,4 +1,4 @@
-import { Exec } from "../exec.ts";
+import { Exec, exec } from "../exec.ts";
 import { GitHubCommit } from "../github-api.ts";
 import * as log from "../log.ts";
 import { DeployCommandInput } from "./types/deploy.ts";
@@ -41,6 +41,7 @@ export class DeployStepImpl implements DeployStep {
     //     echo 'hello world'
     const deployCommands = Deno.env.get("INPUT_DEPLOY_COMMANDS")?.split("\n") ??
       [];
+
     for (const command of deployCommands) {
       log.message(`Running deployment command: ${command}...`);
 
@@ -59,22 +60,54 @@ export class DeployStepImpl implements DeployStep {
         );
       }
 
+      // Add files to git to prepare the stage for the commit after all deployment commands have run.
       for (const file of output?.filesToCommit ?? []) {
         log.message(`Adding file to git: ${file}`);
         await this.git.add({ exec: this.exec, filePath: file });
       }
     }
 
-    const gitCommitCreated = await this.git.commit({
-      exec: this.exec,
-      message: `Deploy version ${input.nextVersionName}`,
-      dryRun,
-    });
-    await this.git.push({
-      exec: this.exec,
-      branch: input.gitCurrentBranch,
-      dryRun,
-    });
+    let gitCommitCreated: GitHubCommit | null = null;
+
+    if (await this.git.areAnyFilesStaged({ exec: this.exec })) {
+      log.message("There were files created/modified during the deployment command. Going to commit these changes to git.");
+
+      /**
+       * There is always a chance that any of the git commands will fail and will cause the deployment to fail. Any sort of failure during deployment can lead to a not calm deployment.
+       * 
+       * By only committing and pushing to a git branch that we control, we can make deployments safer and less prone to problems.
+       * 
+       * If a deployment fails, we can retry it by force pushing the branch. This will clean up the branch and give us a clean slate to try the deployment again.
+       * If the deployment is successful, we can open a PR for the user to merge the changes. This way, the user can review the changes before merging them.
+       */
+
+      // The branch name that we control: 
+      const deploymentBranchName = `new-deployment-tool_latest-deployment`; 
+      // I thought about generating unique branch name for each deployment, but that could lead to the user needing to do a lot of clean up. 
+      // In the future, I think we should consider letting the user define the branch name especially since deployments like CocoaPods requires this. 
+
+      // First part of using branches that we control is delete the existing local branch if it exists. This ensures that we have a clean slate for this deployment and prevents some git errors. 
+      // If the previous deployment failed, there is a chance that the branch already exists. We want a clean slate for the deployment so we want this branch gone. 
+      if (await this.git.doesLocalBranchExist({ exec: this.exec, branch: deploymentBranchName })) {
+        await this.git.deleteBranch({ exec: this.exec, branch: deploymentBranchName, dryRun });
+      } 
+
+      // Create and checkout the branch for the deployment. Sometimes, git will not allow you to checkout a different branch if you have changes that need committing. 
+      // I am not concerned here because we have a brand new branch that just got created so git should let you switch to it.      
+      await this.git.checkoutBranch({ exec: this.exec, branch: deploymentBranchName, createBranchIfNotExist: true });
+
+      gitCommitCreated = await this.git.commit({
+        exec: this.exec,
+        message: `Deploy version ${input.nextVersionName}`,
+        dryRun,
+      });
+      await this.git.push({
+        exec: this.exec,
+        branch: deploymentBranchName,
+        forcePush: true, // if a previous deployment failed, this branch could exist on remote. Force push will cleanup remote branch. It's safe since we control this branch. 
+        dryRun,
+      });
+    }
 
     return gitCommitCreated;
   }

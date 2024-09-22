@@ -10,6 +10,7 @@ import { exec } from "../exec.ts";
 import { DeployStep, DeployStepImpl } from "./deploy.ts";
 import { DeployCommandInput } from "./types/deploy.ts";
 import { git } from "../git.ts";
+import { GitHubCommit } from "../github-api.ts";
 
 const givenPluginInput: DeployCommandInput = {
   gitCurrentBranch: "main",
@@ -20,7 +21,7 @@ const givenPluginInput: DeployCommandInput = {
   isDryRun: false,
 };
 
-describe("run deploy commands", () => {
+describe("run the user given deploy commands", () => {
   afterEach(() => {
     restore();
   });
@@ -33,16 +34,9 @@ describe("run deploy commands", () => {
         output: undefined,
       };
     });
-    stub(git, "commit", async (args) => {
-      return {
-        sha: "123",
-        message: "success",
-        date: new Date(),
-      };
-    });
-    stub(git, "push", async (args) => {
-      return;
-    });
+    stub(git, "areAnyFilesStaged", async (args) => {
+      return false
+    });    
 
     const commands = [
       "echo 'hello world'",
@@ -106,7 +100,7 @@ describe("run deploy commands", () => {
   });
 });
 
-describe("git operations", () => {
+describe("post deploy commands git operations", () => {
   beforeEach(() => {
     Deno.env.delete("INPUT_DEPLOY_COMMANDS"); // deploy commands are not needed for these tests
   });
@@ -115,88 +109,60 @@ describe("git operations", () => {
     restore();
   });
 
-  it("should git add file that command returns", async () => {
-    stub(exec, "run", async (args) => {
-      return {
-        exitCode: 0,
-        stdout: "success",
-        output: {
-          filesToCommit: ["file1", "file2"],
-        },
-      };
-    });
-    const gitAddMock = stub(git, "add", async (args) => {
-      return;
-    });
-    stub(git, "commit", async (args) => {
-      return {
-        sha: "123",
-        message: "success",
-        date: new Date(),
-      };
-    });
-    stub(git, "push", async (args) => {
-      return;
-    });
-
-    const commands = [
-      "echo 'hello world'",
-      "echo 'hello world'",
-      "echo 'hello world'",
-    ];
-
-    Deno.env.set("INPUT_DEPLOY_COMMANDS", commands.join("\n"));
+  it("should not run any git operations if no files have been staged", async () => {
+    const { commitMock } = setupGitStub({areAnyFilesStaged: false, doesLocalBranchExist: true});    
 
     await new DeployStepImpl(exec, git).runDeploymentCommands({
       dryRun: false,
       input: givenPluginInput,
     });
 
-    assertSpyCall(gitAddMock, 0, {
-      args: [{ exec, filePath: "file1" }],
-    });
-    assertSpyCall(gitAddMock, 1, {
-      args: [{ exec, filePath: "file2" }],
-    });
+    assertEquals(commitMock.calls.length, 0);
   });
 
-  it("should pass dry-run mode to git commands depending on if enabled or not", async () => {
-    const gitCommitMock = stub(git, "commit", async (args) => {
-      return {
-        sha: "123",
-        message: "success",
-        date: new Date(),
-      };
-    });
-    const gitPushMock = stub(git, "push", async (args) => {
-      return;
-    });
+  it("should delete local branch if the branch exists", async () => {
+    const {deleteBranchMock, doesLocalBranchExistMock} = setupGitStub({areAnyFilesStaged: true, doesLocalBranchExist: true});
 
-    // First, test when dry-run mode enabled
-    await new DeployStepImpl(exec, git).runDeploymentCommands({
-      dryRun: true,
-      input: givenPluginInput,
-    });
-
-    assertSpyCall(gitCommitMock, 0, {
-      args: [{ exec, message: `Deploy version 1.0.0`, dryRun: true }],
-    });
-    assertSpyCall(gitPushMock, 0, {
-      args: [{ exec, branch: "main", dryRun: true }],
-    });
-
-    // Next, test when dry-run mode disabled
     await new DeployStepImpl(exec, git).runDeploymentCommands({
       dryRun: false,
       input: givenPluginInput,
     });
 
-    assertSpyCall(gitCommitMock, 1, {
-      args: [{ exec, message: `Deploy version 1.0.0`, dryRun: false }],
+    const gitBranchExpectToDelete = doesLocalBranchExistMock.calls[0].args[0].branch;
+    assertEquals(deleteBranchMock.calls.length, 1);
+    assertEquals(deleteBranchMock.calls[0].args[0].branch, gitBranchExpectToDelete);
+  });
+
+  it("should not delete local branch if it does not exist", async () => {
+    const {deleteBranchMock} = setupGitStub({areAnyFilesStaged: true, doesLocalBranchExist: false});
+
+    await new DeployStepImpl(exec, git).runDeploymentCommands({
+      dryRun: false,
+      input: givenPluginInput,
     });
-    assertSpyCall(gitPushMock, 1, {
-      args: [{ exec, branch: "main", dryRun: false }],
+
+    assertEquals(deleteBranchMock.calls.length, 0);
+  });
+
+  it("should checkout, commit, and push if some git files have been staged", async () => {
+    const {doesLocalBranchExistMock, commitMock, checkoutBranchMock, pushMock} = setupGitStub({areAnyFilesStaged: true, doesLocalBranchExist: false});
+
+    await new DeployStepImpl(exec, git).runDeploymentCommands({
+      dryRun: false,
+      input: givenPluginInput,
     });
+
+    assertEquals(checkoutBranchMock.calls.length, 1);
+
+    const gitBranchExpectToCheckoutAndPush = doesLocalBranchExistMock.calls[0].args[0].branch;
+    assertEquals(checkoutBranchMock.calls[0].args[0].branch, gitBranchExpectToCheckoutAndPush);
+    assertEquals(checkoutBranchMock.calls[0].args[0].createBranchIfNotExist, true);
+
+    assertEquals(commitMock.calls.length, 1);    
+
+    assertEquals(pushMock.calls.length, 1);
+    assertEquals(pushMock.calls[0].args[0].branch, gitBranchExpectToCheckoutAndPush);
+    assertEquals(pushMock.calls[0].args[0].forcePush, true);
   });
 });
 
@@ -212,19 +178,7 @@ describe("function return values", () => {
       date: new Date(),
     };
 
-    stub(exec, "run", async (args) => {
-      return {
-        exitCode: 0,
-        stdout: "success",
-        output: undefined,
-      };
-    });
-    stub(git, "commit", async (args) => {
-      return givenCommitCreated;
-    });
-    stub(git, "push", async (args) => {
-      return;
-    });
+    setupGitStub({areAnyFilesStaged: true, doesLocalBranchExist: false, gitCommitCreated: givenCommitCreated});    
 
     const commands = [
       "echo 'hello world'",
@@ -265,5 +219,32 @@ describe("function return values", () => {
         undefined,
       );
     });
-  });
+  });  
 });
+
+const setupGitStub = ({areAnyFilesStaged, doesLocalBranchExist, gitCommitCreated}: {areAnyFilesStaged: boolean, doesLocalBranchExist: boolean, gitCommitCreated?: GitHubCommit}) => {
+  return {
+    areAnyFilesStagedMock: stub(git, "areAnyFilesStaged", async (args) => {
+      return areAnyFilesStaged;
+    }),
+    doesLocalBranchExistMock: stub(git, "doesLocalBranchExist", async (args) => {
+      return doesLocalBranchExist;
+    }),
+    deleteBranchMock: stub(git, "deleteBranch", async (args) => {
+      return;
+    }),
+    checkoutBranchMock: stub(git, "checkoutBranch", async (args) => {
+      return;
+    }),
+    commitMock: stub(git, "commit", async (args) => {
+      return gitCommitCreated || {
+        sha: "123",
+        message: "success",
+        date: new Date(),
+      };
+    }),
+    pushMock: stub(git, "push", async (args) => {
+      return;
+    })
+  }    
+}
