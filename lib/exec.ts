@@ -41,7 +41,7 @@ const run = async (
 ): Promise<
   { exitCode: number; stdout: string; output: DeployCommandOutput | undefined }
 > => {
-  log.message(`Running command: ${command}...`);
+  log.debug(` $> ${command}`);
 
   const execCommand = command.split(" ")[0];
   const execArgs = shellQuote.parse(
@@ -89,7 +89,7 @@ const run = async (
     new WritableStream({
       write(chunk) {
         const decodedChunk = new TextDecoder().decode(chunk);
-        log.message(decodedChunk);
+        log.debug(decodedChunk);
         capturedStdout += decodedChunk.trimEnd();
       },
     }),
@@ -98,7 +98,7 @@ const run = async (
     new WritableStream({
       write(chunk) {
         const decodedChunk = new TextDecoder().decode(chunk);
-        log.message(decodedChunk);
+        log.debug(decodedChunk);
       },
     }),
   );
