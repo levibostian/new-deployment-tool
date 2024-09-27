@@ -14,9 +14,10 @@ export interface RunResult {
 
 export interface Exec {
   run: (
-    { command, input }: {
+    { command, input, displayLogs }: {
       command: string;
       input: DeployCommandInput | undefined;
+      displayLogs?: boolean;
       envVars?: { [key: string]: string };
     },
   ) => Promise<RunResult>;
@@ -33,15 +34,20 @@ We use a popular package to parse the string into the correct args list. See aut
 To make this function testable, we not only have the stdout and stderr be piped to the console, but we return it from this function so tests can verify the output of the command.
 */
 const run = async (
-  { command, input, envVars }: {
+  { command, input, displayLogs, envVars }: {
     command: string;
     input: DeployCommandInput | undefined;
+    displayLogs?: boolean;
     envVars?: { [key: string]: string };
   },
 ): Promise<
   { exitCode: number; stdout: string; output: DeployCommandOutput | undefined }
 > => {
-  log.debug(` $> ${command}`);
+  if (displayLogs) {
+    log.message(` $> ${command}`);
+  } else {
+    log.debug(` $> ${command}`);
+  }
 
   const execCommand = command.split(" ")[0];
   const execArgs = shellQuote.parse(
@@ -89,7 +95,13 @@ const run = async (
     new WritableStream({
       write(chunk) {
         const decodedChunk = new TextDecoder().decode(chunk);
-        log.debug(decodedChunk);
+
+        if (displayLogs) {
+          log.message(decodedChunk);
+        } else {
+          log.debug(decodedChunk);
+        }
+
         capturedStdout += decodedChunk.trimEnd();
       },
     }),
@@ -98,7 +110,12 @@ const run = async (
     new WritableStream({
       write(chunk) {
         const decodedChunk = new TextDecoder().decode(chunk);
-        log.debug(decodedChunk);
+
+        if (displayLogs) {
+          log.message(decodedChunk);
+        } else {
+          log.debug(decodedChunk);
+        }
       },
     }),
   );

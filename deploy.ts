@@ -69,7 +69,7 @@ export const run = async ({
   }
 
   log.notice(
-    `📜 Retrieving all git commits that have been created since the last release...`,
+    `📜 Retrieving all git commits that have been created${lastRelease ? " since the last release: " + lastRelease.tag.name : " since this branch was created"}...`,
   );
 
   const listOfCommits = await getCommitsSinceLatestReleaseStep
@@ -122,6 +122,8 @@ export const run = async ({
     isDryRun: isDryRunMode,
   };
 
+  log.notice(`🚀 Deploying the new version, ${deployCommandsInput.nextVersionName}...`);
+
   const gitCommitCreated = await deployStep.runDeploymentCommands({
     dryRun: isDryRunMode,
     input: deployCommandsInput,
@@ -131,7 +133,7 @@ export const run = async ({
   }
 
   log.notice(
-    `✏️ Creating a new release on GitHub for the new version, ${nextReleaseVersion}...`,
+    `✏️ The deployment is finished. Creating a new release on GitHub for the new version, ${nextReleaseVersion}...`,
   );
   if (isDryRunMode) {
     log.warning(
@@ -147,6 +149,6 @@ export const run = async ({
   });
 
   log.notice(
-    `New release created on GitHub! 🎉 https://github.com/${owner}/${repo}/releases/${nextReleaseVersion}`,
+    `🎉 Done! View the latest release: https://github.com/${owner}/${repo}/releases/${nextReleaseVersion}`, 
   );
 };
