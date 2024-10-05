@@ -77,8 +77,8 @@ export class DeployStepImpl implements DeployStep {
        */
 
       // The branch name that we control: 
-      const deploymentBranchName = `new-deployment-tool_latest-deployment`; 
-      // I thought about generating unique branch name for each deployment, but that could lead to the user needing to do a lot of clean up. 
+      const deploymentBranchName = `new-deployment-tool_${input.nextVersionName}`; 
+      // We need to make sure the branch name is unique for every deployment to avoid this scenario: You deploy 1.0.0 today and then 1.1.0 tomorrow but you have not yet merged the 1.0.0 changes. If branches are not unique, the 1.1.0 deployment will overwrite the 1.0.0 deployment.
       // In the future, I think we should consider letting the user define the branch name especially since deployments like CocoaPods requires this. 
 
       // First part of using branches that we control is delete the existing local branch if it exists. This ensures that we have a clean slate for this deployment and prevents some git errors. 

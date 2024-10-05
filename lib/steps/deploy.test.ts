@@ -1,4 +1,4 @@
-import { assertEquals, assertRejects } from "jsr:@std/assert@1";
+import { assertEquals, assertNotEquals, assertRejects } from "jsr:@std/assert@1";
 import { afterEach, beforeEach, describe, it } from "jsr:@std/testing@1/bdd";
 import {
   assertSpyCall,
@@ -98,6 +98,33 @@ describe("run the user given deploy commands", () => {
       input: givenPluginInput,
     });
   });
+
+  it("should create a new git branch for deployment given a previously successful deployment", async () => {    
+    // First, run a successful deployment.
+    const { checkoutBranchMock, pushMock } = setupGitStub({areAnyFilesStaged: true, doesLocalBranchExist: false});    
+
+    const givenInputFirstDeploy: DeployCommandInput = {...givenPluginInput, nextVersionName: "1.0.0"}; 
+    await new DeployStepImpl(exec, git).runDeploymentCommands({
+      dryRun: false,
+      input: givenInputFirstDeploy,
+    });
+
+    const firstDeploymentGitBranch = checkoutBranchMock.calls[0].args[0].branch
+    assertEquals(pushMock.calls[0].args[0].branch, firstDeploymentGitBranch); // verify we push the same branch we checked out
+
+    // Second, run another successful deployment.
+    const givenInputSecondDeploy: DeployCommandInput = {...givenPluginInput, nextVersionName: "1.1.0"}; 
+
+    await new DeployStepImpl(exec, git).runDeploymentCommands({
+      dryRun: false,
+      input: givenInputSecondDeploy,
+    });
+
+    const secondDeploymentGitBranch = checkoutBranchMock.calls[1].args[0].branch
+    assertEquals(pushMock.calls[1].args[0].branch, secondDeploymentGitBranch); // verify we push the same branch we checked out
+
+    assertNotEquals(firstDeploymentGitBranch, secondDeploymentGitBranch); // verify we use a different branch for the second deployment
+  })
 });
 
 describe("post deploy commands git operations", () => {
