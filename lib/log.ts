@@ -15,6 +15,14 @@ const levels = {
   message: `${colors.white.open}`,
 };
 
+export interface Logger {
+  debug: (message: string) => void;
+  warning: (message: string) => void;
+  error: (message: string) => void;
+  notice: (message: string) => void;
+  message: (message: string) => void;
+}
+
 // Generic log function
 function log(level: keyof typeof levels, message: string) {
   console.log(`${levels[level]}${message}`);
