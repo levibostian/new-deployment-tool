@@ -1,5 +1,5 @@
 import { GetLatestReleaseStep } from "./lib/steps/get-latest-release.ts";
-import * as log from "./lib/log.ts";
+import {Logger} from "./lib/log.ts";
 import { DeployStep } from "./lib/steps/deploy.ts";
 import { DeployCommandInput } from "./lib/steps/types/deploy.ts";
 import { GetCommitsSinceLatestReleaseStep } from "./lib/steps/get-commits-since-latest-release.ts";
@@ -12,21 +12,23 @@ export const run = async ({
   determineNextReleaseStep,
   deployStep,
   createNewReleaseStep,
+  log,
 }: {
   getLatestReleaseStep: GetLatestReleaseStep;
   getCommitsSinceLatestReleaseStep: GetCommitsSinceLatestReleaseStep;
   determineNextReleaseStep: DetermineNextReleaseStep;
   deployStep: DeployStep;
   createNewReleaseStep: CreateNewReleaseStep;
+  log: Logger;
 }): Promise<void> => {
-  log.notice(`Welcome to new-deployment-tool! 🚀`);
+  log.notice(`👋 Hello! I am a tool called new-deployment-tool. I help you deploy your projects.`);
   log.message(
-    `This tool will help you to deploy your project. To learn how it works, read all of the logs that I will print out for you.`,
+    `To learn how the deployment process of your project works, I suggest reading all of the logs that I print to you below.`,
   );
   log.message(
-    `If you want more information besides the logs, you can optionally view the documentation to learn more about the tool: https://github.com/levibostian/new-deployment-tool/`,
+    `If you have more questions after reading the logs, you can optionally view the documentation to learn more about the tool: https://github.com/levibostian/new-deployment-tool/`,
   );
-  log.message(`Ok, let's get started!`);
+  log.message(`Ok, let's get started with the deployment!`);
   log.message(`--------------------------------`);
 
   const githubRef = Deno.env.get("GITHUB_REF")!;
@@ -47,8 +49,10 @@ export const run = async ({
     `github repository executing in: ${githubRepositoryFromEnvironment}. owner: ${owner}, repo: ${repo}`,
   );
 
+  log.notice(`👀 I see that the git branch ${currentBranch} is checked out. We will begin the deployment process from the latest commit of this branch.`);
+
   log.notice(
-    `🔍 Looking for the last release that was created on the current git branch: ${currentBranch}...`,
+    `🔍 First, I need to get the latest release that was created on the git branch ${currentBranch}. I'll look for it now...`,
   );
 
   const lastRelease = await getLatestReleaseStep.getLatestReleaseForBranch({
@@ -60,16 +64,16 @@ export const run = async ({
 
   if (!lastRelease) {
     log.message(
-      `Looks like the branch ${currentBranch} has never been released before. This might be the first release!`,
+      `Looks like the branch ${currentBranch} has never been released before. This will be the first release. Exciting!`,
     );
   } else {
     log.message(
-      `Looks like the last release on the branch ${currentBranch} was: ${lastRelease.tag.name}`,
+      `Looks like the latest release on the git branch ${currentBranch} is: ${lastRelease.tag.name}`,
     );
   }
 
   log.notice(
-    `📜 Retrieving all git commits that have been created since the last release...`,
+    `📜 Next, I need to know all of the changes (git commits) that have been done on git branch ${currentBranch} since the latest release of ${lastRelease?.tag.name}. I'll look for them now...`,
   );
 
   const listOfCommits = await getCommitsSinceLatestReleaseStep
@@ -81,7 +85,7 @@ export const run = async ({
     });
   if (listOfCommits.length === 0) {
     log.warning(
-      `No commits have been created since the last release. This means that there is no new code to deploy. I'll quit now.`,
+      `Looks like zero commits have been created since the latest release. This means there is no new code created and therefore, the deployment process stops here. Bye-bye 👋!`,
     );
     return;
   }
@@ -92,9 +96,10 @@ export const run = async ({
       JSON.stringify(listOfCommits[listOfCommits.length - 1])
     }`,
   );
+  log.message(`I found ${listOfCommits.length} git commits created since ${lastRelease ? `the latest release of ${lastRelease.tag.name}` : `the git branch ${currentBranch} was created`}.`);
 
   log.notice(
-    `📊 Analyzing each commit one-by-one to determine the next release version...`,
+    `📊 Now I need to know (1) if any of these new commits need to be deployed and (2) if they should, what should the new version be. To determine this, I will analyze each git commit one-by-one...`,
   );
 
   const nextReleaseVersion = await determineNextReleaseStep
@@ -105,12 +110,12 @@ export const run = async ({
 
   if (!nextReleaseVersion) {
     log.warning(
-      `After analyzing all commits, no version bump is required. This means that there is no new code to deploy. I'll quit now.`,
+      `After analyzing all of the git commits, none of the commits need to be deployed. Therefore, the deployment process stops here with no new release to be made. Bye-bye 👋!`,
     );
     return;
   }
   log.message(
-    `After analyzing all commits, I have determined the next release version will be: ${nextReleaseVersion}`,
+    `After analyzing all of the git commits, I have determined the next release version will be: ${nextReleaseVersion}`,
   );
 
   const deployCommandsInput: DeployCommandInput = {
@@ -122,6 +127,8 @@ export const run = async ({
     isDryRun: isDryRunMode,
   };
 
+  log.notice(`🚢 It's time to ship ${deployCommandsInput.nextVersionName}! I will now run all of the deployment commands provided in your project's configuration file...`);
+
   const gitCommitCreated = await deployStep.runDeploymentCommands({
     dryRun: isDryRunMode,
     input: deployCommandsInput,
@@ -131,7 +138,7 @@ export const run = async ({
   }
 
   log.notice(
-    `✏️ Creating a new release on GitHub for the new version, ${nextReleaseVersion}...`,
+    `✏️ The code has been shipped. The final piece of the deployment process is creating a new release on GitHub for the new version, ${nextReleaseVersion}. Creating that now...`,
   );
   if (isDryRunMode) {
     log.warning(
@@ -146,7 +153,11 @@ export const run = async ({
     commit: newestCommit,
   });
 
+  log.message(
+    `New release has been created on GitHub. View the release: https://github.com/${owner}/${repo}/releases/${nextReleaseVersion}`, 
+  );
+
   log.notice(
-    `New release created on GitHub! 🎉 https://github.com/${owner}/${repo}/releases/${nextReleaseVersion}`,
+    `🎉 Congratulations! The deployment process has completed. Bye-bye 👋!`, 
   );
 };

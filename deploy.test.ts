@@ -1,6 +1,7 @@
 import { assertEquals } from "jsr:@std/assert@1";
 import { afterEach, describe, it } from "jsr:@std/testing@1/bdd";
 import { restore, stub } from "jsr:@std/testing@1/mock";
+import { assertSnapshot } from "jsr:@std/testing@1/snapshot";
 import { GetLatestReleaseStep } from "./lib/steps/get-latest-release.ts";
 import { run } from "./deploy.ts";
 import { GitHubCommit, GitHubRelease } from "./lib/github-api.ts";
@@ -13,6 +14,7 @@ import {
 } from "./lib/steps/determine-next-release.ts";
 import { CreateNewReleaseStep } from "./lib/steps/create-new-release.ts";
 import { DeployStep } from "./lib/steps/deploy.ts";
+import { getLogMock } from "./lib/log.test.ts";
 
 describe("run the tool", () => {
   afterEach(() => {
@@ -79,6 +81,59 @@ describe("run the tool", () => {
   });
 });
 
+describe("user facing logs", () => {
+  it("given no commits will trigger a release, expect logs to easily communicate that to the user", async (t) => {
+    const { logMock } = await setupTestEnvironmentAndRun({
+      commitsSinceLatestRelease: [new GitHubCommitFake()],
+      nextReleaseVersion: undefined,
+    });
+
+    await assertSnapshot(t, logMock.getLogs({includeDebugLogs: false}));
+  })
+
+  it("given no commits created since last deployment, expect logs to easily communicate that to the user", async (t) => {
+    const { logMock } = await setupTestEnvironmentAndRun({
+      commitsSinceLatestRelease: [],
+    });
+
+    await assertSnapshot(t, logMock.getLogs({includeDebugLogs: false}));
+  })
+
+  it("given new commit created during deployment, expect logs to easily communicate that to the user", async (t) => {
+    const givenLatestCommitOnBranch = new GitHubCommitFake({
+      message: "feat: trigger a release",
+      sha: "trigger-release",
+    });
+    const givenCreatedCommitDuringDeploy = new GitHubCommitFake({
+      message: "chore: commit created during deploy",
+      sha: "commit-created-during-deploy",
+    });
+
+    const { logMock } = await setupTestEnvironmentAndRun({
+      commitsSinceLatestRelease: [givenLatestCommitOnBranch],
+      gitCommitCreatedDuringDeploy: givenCreatedCommitDuringDeploy,
+      nextReleaseVersion: "1.0.0",
+    });
+
+    await assertSnapshot(t, logMock.getLogs({includeDebugLogs: false}));
+  })
+
+  it("given no new commits created during deployment, expect logs to easily communicate that to the user", async (t) => {
+    const givenLatestCommitOnBranch = new GitHubCommitFake({
+      message: "feat: trigger a release",
+      sha: "trigger-release",
+    });
+
+    const { logMock } = await setupTestEnvironmentAndRun({
+      commitsSinceLatestRelease: [givenLatestCommitOnBranch],
+      gitCommitCreatedDuringDeploy: undefined,
+      nextReleaseVersion: "1.0.0",
+    });
+
+    await assertSnapshot(t, logMock.getLogs({includeDebugLogs: false}));
+  })
+})
+
 const setupTestEnvironmentAndRun = async ({
   latestRelease,
   commitsSinceLatestRelease,
@@ -136,12 +191,15 @@ const setupTestEnvironmentAndRun = async ({
     },
   );
 
+  const logMock = getLogMock();
+
   await run({
     getLatestReleaseStep,
     getCommitsSinceLatestReleaseStep,
     determineNextReleaseStep,
     deployStep,
     createNewReleaseStep,
+    log: logMock,
   });
 
   return {
@@ -150,5 +208,6 @@ const setupTestEnvironmentAndRun = async ({
     determineNextReleaseStepMock,
     deployStepMock,
     createNewReleaseStepMock,
+    logMock,
   };
 };

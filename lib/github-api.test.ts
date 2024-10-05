@@ -4,12 +4,12 @@ import { GitHubApiImpl, GitHubCommit, GitHubRelease } from "./github-api.ts";
 
 export const GitHubReleaseFake: GitHubRelease = {
   tag: {
-    name: "",
+    name: "1.0.0",
     commit: {
-      sha: "",
+      sha: "abc123",
     },
   },
-  name: "",
+  name: "v1.0.0",
   created_at: new Date("2021-01-01T00:00:00Z"),
 };
 

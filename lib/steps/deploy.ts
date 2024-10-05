@@ -32,8 +32,6 @@ export class DeployStepImpl implements DeployStep {
     dryRun: boolean;
     input: DeployCommandInput;
   }): Promise<GitHubCommit | null> {
-    log.notice(`🚀 Deploying the new version, ${input.nextVersionName}...`);
-
     // You can provide a list of commands in the github action workflow yaml file where the separator is a new line.
     // with:
     //   deploy_commands: |
@@ -43,13 +41,11 @@ export class DeployStepImpl implements DeployStep {
       [];
 
     for (const command of deployCommands) {
-      log.message(`Running deployment command: ${command}...`);
-
-      const { exitCode, output } = await this.exec.run({ command, input });
+      const { exitCode, output } = await this.exec.run({ command, input, displayLogs: true });
 
       if (exitCode !== 0) {
         log.error(
-          `Deploy command, ${command}, failed with error code ${exitCode}.`,
+          `Deploy command, ${command}, failed with error code: ${exitCode}`,
         );
         log.error(
           `I will stop the deployment process now. Review the logs to see if this is an issue you need to fix before you retry the deployment again. Otherwise, simply retry running the deployment again later.`,
@@ -62,7 +58,6 @@ export class DeployStepImpl implements DeployStep {
 
       // Add files to git to prepare the stage for the commit after all deployment commands have run.
       for (const file of output?.filesToCommit ?? []) {
-        log.message(`Adding file to git: ${file}`);
         await this.git.add({ exec: this.exec, filePath: file });
       }
     }
@@ -70,7 +65,7 @@ export class DeployStepImpl implements DeployStep {
     let gitCommitCreated: GitHubCommit | null = null;
 
     if (await this.git.areAnyFilesStaged({ exec: this.exec })) {
-      log.message("There were files created/modified during the deployment command. Going to commit these changes to git.");
+      log.message("There were files modified during the deployment process. Going to commit and push these changes to your GitHub repo...");
 
       /**
        * There is always a chance that any of the git commands will fail and will cause the deployment to fail. Any sort of failure during deployment can lead to a not calm deployment.
@@ -107,6 +102,9 @@ export class DeployStepImpl implements DeployStep {
         forcePush: true, // if a previous deployment failed, this branch could exist on remote. Force push will cleanup remote branch. It's safe since we control this branch. 
         dryRun,
       });
+
+      log.message(`Deployment changes have been pushed to your GitHub repo. You can view the changes here: https://github.com/${input.gitRepoOwner}/${input.gitRepoName}/tree/${deploymentBranchName}`);
+      log.message(`It's recommended to merge these changes into your default branch to avoid losing these changes.`)
     }
 
     return gitCommitCreated;
