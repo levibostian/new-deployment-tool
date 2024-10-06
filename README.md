@@ -38,6 +38,10 @@ You might think this is magic, but really, your git history is what drives this 
 
 Just follow these 3 steps. 
 
+1. [Install the tool](#install-the-tool-with-github-actions)
+2. [Write the deployment scripts](#write-your-deployment-scripts)
+3. [Push git commits to your deployment branch](#push-git-commits-with-the-correct-pr-message)
+
 ## Install the tool with Github Actions
 
 This tool is designed to run on GitHub Actions for the project that you want to deploy. 
