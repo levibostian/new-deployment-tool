@@ -1,4 +1,4 @@
-import colors from 'npm:ansi-styles@6.2.1'
+import colors from "npm:ansi-styles@6.2.1";
 
 // log.ts
 // This module provides a simple API for logging messages at different levels to GitHub Actions.
@@ -12,8 +12,16 @@ const levels = {
   warning: `::warning::${colors.white.open}`, // Lines are highlighted with yellow in the GitHub Actions logs.
   error: `::error::${colors.white.open}`, // Lines are highlighted with red in the GitHub Actions logs.
   notice: `${colors.blue.open}`, // Notice messages, a way to highlight important information, displayed in blue.
-  message: `${colors.white.open}`, 
+  message: `${colors.white.open}`,
 };
+
+export interface Logger {
+  debug: (message: string) => void;
+  warning: (message: string) => void;
+  error: (message: string) => void;
+  notice: (message: string) => void;
+  message: (message: string) => void;
+}
 
 // Generic log function
 function log(level: keyof typeof levels, message: string) {
