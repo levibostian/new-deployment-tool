@@ -8,6 +8,7 @@ import { GetLatestReleaseStepImpl } from "./lib/steps/get-latest-release.ts";
 import { exec } from "./lib/exec.ts";
 import { git } from "./lib/git.ts";
 import * as log from "./lib/log.ts";
+import { GitHubActionsImpl } from "./lib/github-actions.ts";
 
 /*
 This file is the entrypoint for running the tool.
@@ -25,4 +26,5 @@ await run({
   deployStep: new DeployStepImpl(exec, git),
   createNewReleaseStep: new CreateNewReleaseStepImpl(githubApi),
   log,
+  githubActions: new GitHubActionsImpl()
 });

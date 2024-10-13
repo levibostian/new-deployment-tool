@@ -54,6 +54,27 @@ describe("run the user given deploy commands", () => {
     assertEquals(runStub.calls.length, 3);
   });
 
+  it("given default value of empty string, expect to not run any commands", async () => {
+    const runStub = stub(exec, "run", async (args) => {
+      return {
+        exitCode: 0,
+        stdout: "success",
+        output: undefined,
+      };
+    });
+    stub(git, "areAnyFilesStaged", async (args) => {
+      return false
+    });
+
+    Deno.env.set("INPUT_DEPLOY_COMMANDS", '');
+
+    await new DeployStepImpl(exec, git).runDeploymentCommands({
+      environment: defaultEnvironment,
+    });
+
+    assertEquals(runStub.calls.length, 0);
+  });
+
   it("should return false, given a deploy command fails", async () => {
     stub(exec, "run", async (args) => {
       return {

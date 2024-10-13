@@ -28,3 +28,16 @@ jobs:
       with:
         reports: |
           junit|reports/junit.xml
+
+  test-it-runs:
+    runs-on: ubuntu-latest
+    permissions:    
+      contents: read # only offer read permissions for dry-run to prevent accidental deployments
+    steps:
+    - uses: actions/checkout@v4
+    - name: Run deployment tool in dry-run mode
+      uses: ./      
+      with: 
+        version: ${{ github.sha }}
+        dry_run_mode: 'true'
+        github_token: ${{ secrets.github_token }}
