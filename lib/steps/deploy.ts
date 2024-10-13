@@ -1,8 +1,8 @@
 import { Exec, exec } from "../exec.ts";
 import { GitHubCommit } from "../github-api.ts";
 import * as log from "../log.ts";
-import { DeployCommandInput } from "./types/deploy.ts";
 import { Git } from "../git.ts";
+import { DeployEnvironment } from "../types/environment.ts";
 
 /**
  * Run the deployment commands that the user has provided in the github action workflow yaml file.
@@ -19,18 +19,16 @@ import { Git } from "../git.ts";
  * 3. If the user is running multiple commands for deployment, there is a chance that multiple commands create commits. That just makes this tool more complex.
  */
 export interface DeployStep {
-  runDeploymentCommands({ dryRun, input }: {
-    dryRun: boolean;
-    input: DeployCommandInput;
+  runDeploymentCommands({ environment }: {
+    environment: DeployEnvironment;
   }): Promise<GitHubCommit | null>;
 }
 
 export class DeployStepImpl implements DeployStep {
   constructor(private exec: Exec, private git: Git) {}
 
-  async runDeploymentCommands({ dryRun, input }: {
-    dryRun: boolean;
-    input: DeployCommandInput;
+  async runDeploymentCommands({ environment }: {
+    environment: DeployEnvironment;
   }): Promise<GitHubCommit | null> {
     // You can provide a list of commands in the github action workflow yaml file where the separator is a new line.
     // with:
@@ -41,7 +39,7 @@ export class DeployStepImpl implements DeployStep {
       [];
 
     for (const command of deployCommands) {
-      const { exitCode, output } = await this.exec.run({ command, input, displayLogs: true });
+      const { exitCode, output } = await this.exec.run({ command, input: environment, displayLogs: true });
 
       if (exitCode !== 0) {
         log.error(
@@ -77,14 +75,14 @@ export class DeployStepImpl implements DeployStep {
        */
 
       // The branch name that we control: 
-      const deploymentBranchName = `new-deployment-tool_${input.nextVersionName}`; 
+      const deploymentBranchName = `new-deployment-tool_${environment.nextVersionName}`; 
       // We need to make sure the branch name is unique for every deployment to avoid this scenario: You deploy 1.0.0 today and then 1.1.0 tomorrow but you have not yet merged the 1.0.0 changes. If branches are not unique, the 1.1.0 deployment will overwrite the 1.0.0 deployment.
       // In the future, I think we should consider letting the user define the branch name especially since deployments like CocoaPods requires this. 
 
       // First part of using branches that we control is delete the existing local branch if it exists. This ensures that we have a clean slate for this deployment and prevents some git errors. 
       // If the previous deployment failed, there is a chance that the branch already exists. We want a clean slate for the deployment so we want this branch gone. 
       if (await this.git.doesLocalBranchExist({ exec: this.exec, branch: deploymentBranchName })) {
-        await this.git.deleteBranch({ exec: this.exec, branch: deploymentBranchName, dryRun });
+        await this.git.deleteBranch({ exec: this.exec, branch: deploymentBranchName, dryRun: environment.isDryRun });
       } 
 
       // Create and checkout the branch for the deployment. Sometimes, git will not allow you to checkout a different branch if you have changes that need committing. 
@@ -93,17 +91,17 @@ export class DeployStepImpl implements DeployStep {
 
       gitCommitCreated = await this.git.commit({
         exec: this.exec,
-        message: `Deploy version ${input.nextVersionName}`,
-        dryRun,
+        message: `Deploy version ${environment.nextVersionName}`,
+        dryRun: environment.isDryRun,
       });
       await this.git.push({
         exec: this.exec,
         branch: deploymentBranchName,
         forcePush: true, // if a previous deployment failed, this branch could exist on remote. Force push will cleanup remote branch. It's safe since we control this branch. 
-        dryRun,
+        dryRun: environment.isDryRun,
       });
 
-      log.message(`Deployment changes have been pushed to your GitHub repo. You can view the changes here: https://github.com/${input.gitRepoOwner}/${input.gitRepoName}/tree/${deploymentBranchName}`);
+      log.message(`Deployment changes have been pushed to your GitHub repo. You can view the changes here: https://github.com/${environment.gitRepoOwner}/${environment.gitRepoName}/tree/${deploymentBranchName}`);
       log.message(`It's recommended to merge these changes into your default branch to avoid losing these changes.`)
     }
 

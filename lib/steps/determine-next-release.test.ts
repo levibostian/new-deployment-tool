@@ -1,9 +1,18 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/assert_equals.ts";
-import { GitHubCommit } from "../github-api.ts";
+import { GitHubCommit, GitHubRelease } from "../github-api.ts";
 import { DetermineNextReleaseStepImpl } from "./determine-next-release.ts";
 import { GitHubReleaseFake } from "../github-api.test.ts";
 
-Deno.test("getNextReleaseVersion initializes version correctly", async () => {
+const defaultEnvironment = {
+  gitCurrentBranch: "main",
+  lastRelease: null,
+  gitCommitsSinceLastRelease: [],
+  gitRepoOwner: "owner",
+  gitRepoName: "repo",
+  isDryRun: false,
+};
+
+Deno.test("given this is first release, not prerelease, expect default version", async () => {
   const commits: GitHubCommit[] = [{
     sha: "",
     message: "feat: initial commit",
@@ -11,6 +20,7 @@ Deno.test("getNextReleaseVersion initializes version correctly", async () => {
   }];
   const result = await new DetermineNextReleaseStepImpl().getNextReleaseVersion(
     {
+      environment: defaultEnvironment,
       commits,
       latestRelease: null,
     },
@@ -18,7 +28,24 @@ Deno.test("getNextReleaseVersion initializes version correctly", async () => {
   assertEquals(result, "1.0.0");
 });
 
-Deno.test("getNextReleaseVersion bumps major version correctly", async () => {
+Deno.test("given this is first release, prerelease, expect default prerelease version", async () => {
+  const commits: GitHubCommit[] = [{
+    sha: "",
+    message: "feat: initial commit",
+    date: new Date(),
+  }];
+  const result = await new DetermineNextReleaseStepImpl().getNextReleaseVersion(
+    {
+      config: {branches: [{branch_name: "beta", prerelease: true, version_suffix: "beta"}]},
+      environment: { ...defaultEnvironment, gitCurrentBranch: "beta" },
+      commits,
+      latestRelease: null,
+    },
+  );
+  assertEquals(result, "1.0.0-beta.1");
+})
+
+Deno.test("given introducing a breaking change, expect bumps major version", async () => {
   const commits: GitHubCommit[] = [{
     sha: "",
     message: "feat!: add new authentication system",
@@ -26,6 +53,7 @@ Deno.test("getNextReleaseVersion bumps major version correctly", async () => {
   }];
   const result = await new DetermineNextReleaseStepImpl().getNextReleaseVersion(
     {
+      environment: defaultEnvironment,
       commits,
       latestRelease: {
         ...GitHubReleaseFake,
@@ -36,14 +64,15 @@ Deno.test("getNextReleaseVersion bumps major version correctly", async () => {
   assertEquals(result, "2.0.0");
 });
 
-Deno.test("getNextReleaseVersion bumps minor version correctly", async () => {
+Deno.test("given a feature commit, expect bumps minor version", async () => {
   const commits: GitHubCommit[] = [{
     sha: "",
-    message: "feat: add user profile page",
+    message: "feat: add new feature",
     date: new Date(),
   }];
   const result = await new DetermineNextReleaseStepImpl().getNextReleaseVersion(
     {
+      environment: defaultEnvironment,
       commits,
       latestRelease: {
         ...GitHubReleaseFake,
@@ -54,14 +83,15 @@ Deno.test("getNextReleaseVersion bumps minor version correctly", async () => {
   assertEquals(result, "1.3.0");
 });
 
-Deno.test("getNextReleaseVersion bumps patch version correctly", async () => {
+Deno.test("given a fix commit, expect bumps patch version", async () => {
   const commits: GitHubCommit[] = [{
     sha: "",
-    message: "fix: fix login bug",
+    message: "fix: resolve issue with login",
     date: new Date(),
   }];
   const result = await new DetermineNextReleaseStepImpl().getNextReleaseVersion(
     {
+      environment: defaultEnvironment,
       commits,
       latestRelease: {
         ...GitHubReleaseFake,
@@ -72,10 +102,15 @@ Deno.test("getNextReleaseVersion bumps patch version correctly", async () => {
   assertEquals(result, "1.2.4");
 });
 
-Deno.test("getNextReleaseVersion does not bump version without commits", async () => {
-  const commits: GitHubCommit[] = [];
+Deno.test("given a chore commit, expect no next version", async () => {
+  const commits: GitHubCommit[] = [{
+    sha: "",
+    message: "chore: update dependencies",
+    date: new Date(),
+  }];
   const result = await new DetermineNextReleaseStepImpl().getNextReleaseVersion(
     {
+      environment: defaultEnvironment,
       commits,
       latestRelease: {
         ...GitHubReleaseFake,
@@ -86,14 +121,16 @@ Deno.test("getNextReleaseVersion does not bump version without commits", async (
   assertEquals(result, null);
 });
 
-Deno.test("getNextReleaseVersion handles multiple commits with different bumps", async () => {
-  const commits: GitHubCommit[] = [
-    { sha: "", message: "fix: fix login bug", date: new Date() },
-    { sha: "", message: "feat: add user profile page", date: new Date() },
-    { sha: "", message: "feat!: change API endpoints", date: new Date() },
-  ];
+Deno.test("given latest release is not prerelease and next release is prerelease, expect bump and add prerelease suffix", async () => {
+  const commits: GitHubCommit[] = [{
+    sha: "",
+    message: "feat: add new feature",
+    date: new Date(),
+  }];
   const result = await new DetermineNextReleaseStepImpl().getNextReleaseVersion(
     {
+      config: {branches: [{branch_name: "beta", prerelease: true, version_suffix: "beta"}]},
+      environment: { ...defaultEnvironment, gitCurrentBranch: "beta" },
       commits,
       latestRelease: {
         ...GitHubReleaseFake,
@@ -101,5 +138,85 @@ Deno.test("getNextReleaseVersion handles multiple commits with different bumps",
       },
     },
   );
-  assertEquals(result, "2.0.0");
-});
+  assertEquals(result, "1.3.0-beta.1");
+})
+
+Deno.test("given latest release is prerelease, next release is prerelease, next release is major bump, expect next prerelease version with new major version", async () => {
+  const commits: GitHubCommit[] = [{
+    sha: "",
+    message: "feat!: add new feature",
+    date: new Date(),
+  }];
+  const result = await new DetermineNextReleaseStepImpl().getNextReleaseVersion(
+    {
+      config: {branches: [{branch_name: "beta", prerelease: true, version_suffix: "beta"}]},
+      environment: { ...defaultEnvironment, gitCurrentBranch: "beta" },
+      commits,
+      latestRelease: {
+        ...GitHubReleaseFake,
+        tag: { ...GitHubReleaseFake.tag, name: "1.2.3-beta.1" },
+      },
+    },
+  );
+  assertEquals(result, "2.0.0-beta.1");
+})
+
+Deno.test("given latest version is prerelease and next release is prerelease, expect next prerelease version", async () => {
+  const commits: GitHubCommit[] = [{
+    sha: "",
+    message: "feat: add new feature",
+    date: new Date(),
+  }];
+  const result = await new DetermineNextReleaseStepImpl().getNextReleaseVersion(
+    {
+      config: {branches: [{branch_name: "beta", prerelease: true, version_suffix: "beta"}]},
+      environment: { ...defaultEnvironment, gitCurrentBranch: "beta" },
+      commits,
+      latestRelease: {
+        ...GitHubReleaseFake,
+        tag: { ...GitHubReleaseFake.tag, name: "1.3.0-beta.1" },
+      },
+    },
+  );
+  assertEquals(result, "1.3.0-beta.2");
+})
+
+Deno.test("given latest version is prerelease and next release is not prerelease, expect next non-prelease version", async () => {
+  const commits: GitHubCommit[] = [{
+    sha: "",
+    message: "feat: add new feature",
+    date: new Date(),
+  }];
+  const result = await new DetermineNextReleaseStepImpl().getNextReleaseVersion(
+    {
+      config: {branches: [{branch_name: "beta", prerelease: true, version_suffix: "beta"}]},
+      environment: { ...defaultEnvironment, gitCurrentBranch: "main" },
+      commits,
+      latestRelease: {
+        ...GitHubReleaseFake,
+        tag: { ...GitHubReleaseFake.tag, name: "1.3.0-beta.1" },
+      },
+    },
+  );
+  assertEquals(result, "1.3.0");
+})
+
+Deno.test("given latest version is prerelease and next release is prerelease but different suffix, expect next prerelease version with new suffix", async () => {
+  const commits: GitHubCommit[] = [{
+    sha: "",
+    message: "feat: add new feature",
+    date: new Date(),
+  }];
+  const result = await new DetermineNextReleaseStepImpl().getNextReleaseVersion(
+    {
+      config: {branches: [{branch_name: "beta", prerelease: true, version_suffix: "beta"}]},
+      environment: { ...defaultEnvironment, gitCurrentBranch: "beta" },
+      commits,
+      latestRelease: {
+        ...GitHubReleaseFake,
+        tag: { ...GitHubReleaseFake.tag, name: "1.3.0-alpha.3" },
+      },
+    },
+  );
+  assertEquals(result, "1.3.0-beta.1");
+})

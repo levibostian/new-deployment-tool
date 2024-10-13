@@ -15,6 +15,7 @@ import {
 import { CreateNewReleaseStep } from "./lib/steps/create-new-release.ts";
 import { DeployStep } from "./lib/steps/deploy.ts";
 import { getLogMock } from "./lib/log.test.ts";
+import { GitHubActions } from "./lib/github-actions.ts";
 
 describe("run the tool", () => {
   afterEach(() => {
@@ -192,6 +193,15 @@ const setupTestEnvironmentAndRun = async ({
   );
 
   const logMock = getLogMock();
+  
+  const githubActions = {} as GitHubActions
+  const githubActionsGetDetermineNextReleaseStepConfigMock = stub(
+    githubActions,
+    "getDetermineNextReleaseStepConfig",
+    () => {
+      return undefined;
+    },
+  );
 
   await run({
     getLatestReleaseStep,
@@ -200,6 +210,7 @@ const setupTestEnvironmentAndRun = async ({
     deployStep,
     createNewReleaseStep,
     log: logMock,
+    githubActions,
   });
 
   return {
@@ -209,5 +220,6 @@ const setupTestEnvironmentAndRun = async ({
     deployStepMock,
     createNewReleaseStepMock,
     logMock,
+    githubActionsGetDetermineNextReleaseStepConfigMock
   };
 };
