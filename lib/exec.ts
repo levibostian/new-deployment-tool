@@ -1,10 +1,10 @@
 import {
-  DeployCommandInput,
   DeployCommandOutput,
   isDeployCommandOutput,
 } from "./steps/types/deploy.ts";
 import * as log from "./log.ts";
 import * as shellQuote from "npm:shell-quote@1.8.1";
+import { DeployEnvironment } from "./types/environment.ts";
 
 export interface RunResult {
   exitCode: number;
@@ -16,7 +16,7 @@ export interface Exec {
   run: (
     { command, input, displayLogs }: {
       command: string;
-      input: DeployCommandInput | undefined;
+      input: DeployEnvironment | undefined;
       displayLogs?: boolean;
       envVars?: { [key: string]: string };
     },
@@ -36,7 +36,7 @@ To make this function testable, we not only have the stdout and stderr be piped 
 const run = async (
   { command, input, displayLogs, envVars }: {
     command: string;
-    input: DeployCommandInput | undefined;
+    input: DeployEnvironment | undefined;
     displayLogs?: boolean;
     envVars?: { [key: string]: string };
   },

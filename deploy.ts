@@ -1,10 +1,11 @@
 import { GetLatestReleaseStep } from "./lib/steps/get-latest-release.ts";
 import {Logger} from "./lib/log.ts";
 import { DeployStep } from "./lib/steps/deploy.ts";
-import { DeployCommandInput } from "./lib/steps/types/deploy.ts";
 import { GetCommitsSinceLatestReleaseStep } from "./lib/steps/get-commits-since-latest-release.ts";
 import { DetermineNextReleaseStep } from "./lib/steps/determine-next-release.ts";
 import { CreateNewReleaseStep } from "./lib/steps/create-new-release.ts";
+import {DeployEnvironment, GetNextReleaseVersionEnvironment} from "./lib/types/environment.ts";
+import { GitHubActions } from "./lib/github-actions.ts";
 
 export const run = async ({
   getLatestReleaseStep,
@@ -12,6 +13,7 @@ export const run = async ({
   determineNextReleaseStep,
   deployStep,
   createNewReleaseStep,
+  githubActions,
   log,
 }: {
   getLatestReleaseStep: GetLatestReleaseStep;
@@ -19,8 +21,13 @@ export const run = async ({
   determineNextReleaseStep: DetermineNextReleaseStep;
   deployStep: DeployStep;
   createNewReleaseStep: CreateNewReleaseStep;
+  githubActions: GitHubActions;
   log: Logger;
 }): Promise<void> => {
+  // Parse the configuration set by the user first so we can fail early if the configuration is invalid. Fast feedback for the user. 
+  // Have the function throw if the JSON parsing fails. it will then exit the function. 
+  const determineNextReleaseStepConfig = githubActions.getDetermineNextReleaseStepConfig();
+
   log.notice(`👋 Hello! I am a tool called new-deployment-tool. I help you deploy your projects.`);
   log.message(
     `To learn how the deployment process of your project works, I suggest reading all of the logs that I print to you below.`,
@@ -102,8 +109,19 @@ export const run = async ({
     `📊 Now I need to know (1) if any of these new commits need to be deployed and (2) if they should, what should the new version be. To determine this, I will analyze each git commit one-by-one...`,
   );
 
+  const determineNextReleaseVersionEnvironment: GetNextReleaseVersionEnvironment = {
+    gitCurrentBranch: currentBranch,
+    gitRepoOwner: owner,
+    gitRepoName: repo,
+    isDryRun: isDryRunMode,
+    gitCommitsSinceLastRelease: listOfCommits,
+    lastRelease,
+  };
+
   const nextReleaseVersion = await determineNextReleaseStep
     .getNextReleaseVersion({
+      config: determineNextReleaseStepConfig,
+      environment: determineNextReleaseVersionEnvironment,
       commits: listOfCommits,
       latestRelease: lastRelease,
     });
@@ -118,20 +136,12 @@ export const run = async ({
     `After analyzing all of the git commits, I have determined the next release version will be: ${nextReleaseVersion}`,
   );
 
-  const deployCommandsInput: DeployCommandInput = {
-    gitCurrentBranch: currentBranch,
-    gitRepoOwner: owner,
-    gitRepoName: repo,
-    gitCommitsSinceLastRelease: listOfCommits,
-    nextVersionName: nextReleaseVersion,
-    isDryRun: isDryRunMode,
-  };
+  log.notice(`🚢 It's time to ship ${nextReleaseVersion}! I will now run all of the deployment commands provided in your project's configuration file...`);
 
-  log.notice(`🚢 It's time to ship ${deployCommandsInput.nextVersionName}! I will now run all of the deployment commands provided in your project's configuration file...`);
+  const deployEnvironment: DeployEnvironment = {...determineNextReleaseVersionEnvironment, nextVersionName: nextReleaseVersion};
 
   const gitCommitCreated = await deployStep.runDeploymentCommands({
-    dryRun: isDryRunMode,
-    input: deployCommandsInput,
+    environment: deployEnvironment,
   });
   if (gitCommitCreated) {
     newestCommit = gitCommitCreated;

@@ -172,7 +172,46 @@ Some git commits that you push to your deployment branch should be released (fea
 
 If your team is not used to using a special format for git commit messages, you may find [this tool useful](https://github.com/levibostian/action-conventional-pr-linter) to lint pull requests before you click *Squash and merge* and perform a deployment. 
 
+*Tip:* We suggest checking out [how to create pre-production releases](#create-prerelease-versions) to see if this is something you're interested in. 
+
 > Note: In the future, we plan on allowing you to customize how git commits are analyzed so you can use a git commit message format your team decides. Until then, you must use conventional commits format. 
+
+# Configuration 
+
+Customize this tool to work as you wish. 
+
+### Create prerelease versions
+
+While developing new features of a project, it can be convenient to create prerelease versions such as an alpha or beta. You can configure the tool to make these types of releases, too. To do so, follow these steps: 
+
+1. Configure what branches should create pre-production releases. 
+
+```yml
+# This block installs the tool and configures it for your project. 
+- uses: levibostian/new-deployment-tool@main
+  with:
+    # Add this new config option to your github workflow file.
+    # The format of this block is a JSON string. 
+    # For this block, provide a list of branches that releases 
+    # should occur on when you push code to those branches. 
+    # If you want a branch to create pre-production releases, set 
+    # 'prerelease' to true. 
+    analyze_commits_config: |
+      {
+        'branches': [
+          {branch_name: 'beta', prerelease: true, version_suffix: 'beta'},
+          {branch_name: 'alpha', prerelease: true, version_suffix: 'alpha'}
+        ]
+      }
+```
+
+The example above will create pre-production releases when code is pushed to both the `alpha` and `beta` branches. 
+
+2. Push code to the branches that you configured. 
+
+Create conventional commits as you are already used to doing and push those commits to the branches you configured as `prerelease` branches. A deployment will occur with a pre-production semantic version. 
+
+> Note: Make sure that your `prerelease` branches are kept up-to-date with your production branch. If you don't the pre-production version that is created will be incorrect and could confuse your app's users. 
 
 # Why create this tool?
 

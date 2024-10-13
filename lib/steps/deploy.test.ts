@@ -8,17 +8,18 @@ import {
 } from "jsr:@std/testing@1/mock";
 import { exec } from "../exec.ts";
 import { DeployStep, DeployStepImpl } from "./deploy.ts";
-import { DeployCommandInput } from "./types/deploy.ts";
 import { git } from "../git.ts";
 import { GitHubCommit } from "../github-api.ts";
+import { DeployEnvironment } from "../types/environment.ts";
 
-const givenPluginInput: DeployCommandInput = {
+const defaultEnvironment: DeployEnvironment = {
   gitCurrentBranch: "main",
   gitRepoOwner: "owner",
   gitRepoName: "repo",
   gitCommitsSinceLastRelease: [],
   nextVersionName: "1.0.0",
   isDryRun: false,
+  lastRelease: null, 
 };
 
 describe("run the user given deploy commands", () => {
@@ -47,8 +48,7 @@ describe("run the user given deploy commands", () => {
     Deno.env.set("INPUT_DEPLOY_COMMANDS", commands.join("\n"));
 
     await new DeployStepImpl(exec, git).runDeploymentCommands({
-      dryRun: false,
-      input: givenPluginInput,
+      environment: defaultEnvironment,
     });
 
     assertEquals(runStub.calls.length, 3);
@@ -73,8 +73,7 @@ describe("run the user given deploy commands", () => {
 
     assertRejects(async () => {
       await new DeployStepImpl(exec, git).runDeploymentCommands({
-        dryRun: false,
-        input: givenPluginInput,
+        environment: defaultEnvironment,
       });
     });
   });
@@ -94,8 +93,7 @@ describe("run the user given deploy commands", () => {
     });
 
     await new DeployStepImpl(exec, git).runDeploymentCommands({
-      dryRun: false,
-      input: givenPluginInput,
+      environment: defaultEnvironment,
     });
   });
 
@@ -103,21 +101,18 @@ describe("run the user given deploy commands", () => {
     // First, run a successful deployment.
     const { checkoutBranchMock, pushMock } = setupGitStub({areAnyFilesStaged: true, doesLocalBranchExist: false});    
 
-    const givenInputFirstDeploy: DeployCommandInput = {...givenPluginInput, nextVersionName: "1.0.0"}; 
+    const givenEnvironmentFirstDeploy = {...defaultEnvironment, nextVersionName: "1.0.0"}; 
     await new DeployStepImpl(exec, git).runDeploymentCommands({
-      dryRun: false,
-      input: givenInputFirstDeploy,
+      environment: givenEnvironmentFirstDeploy,
     });
 
     const firstDeploymentGitBranch = checkoutBranchMock.calls[0].args[0].branch
     assertEquals(pushMock.calls[0].args[0].branch, firstDeploymentGitBranch); // verify we push the same branch we checked out
 
     // Second, run another successful deployment.
-    const givenInputSecondDeploy: DeployCommandInput = {...givenPluginInput, nextVersionName: "1.1.0"}; 
-
+    const givenEnvironmentSecondDeploy = {...defaultEnvironment, nextVersionName: "1.1.0"}; 
     await new DeployStepImpl(exec, git).runDeploymentCommands({
-      dryRun: false,
-      input: givenInputSecondDeploy,
+      environment: givenEnvironmentSecondDeploy,
     });
 
     const secondDeploymentGitBranch = checkoutBranchMock.calls[1].args[0].branch
@@ -140,8 +135,7 @@ describe("post deploy commands git operations", () => {
     const { commitMock } = setupGitStub({areAnyFilesStaged: false, doesLocalBranchExist: true});    
 
     await new DeployStepImpl(exec, git).runDeploymentCommands({
-      dryRun: false,
-      input: givenPluginInput,
+      environment: defaultEnvironment,
     });
 
     assertEquals(commitMock.calls.length, 0);
@@ -151,8 +145,7 @@ describe("post deploy commands git operations", () => {
     const {deleteBranchMock, doesLocalBranchExistMock} = setupGitStub({areAnyFilesStaged: true, doesLocalBranchExist: true});
 
     await new DeployStepImpl(exec, git).runDeploymentCommands({
-      dryRun: false,
-      input: givenPluginInput,
+      environment: defaultEnvironment,
     });
 
     const gitBranchExpectToDelete = doesLocalBranchExistMock.calls[0].args[0].branch;
@@ -164,8 +157,7 @@ describe("post deploy commands git operations", () => {
     const {deleteBranchMock} = setupGitStub({areAnyFilesStaged: true, doesLocalBranchExist: false});
 
     await new DeployStepImpl(exec, git).runDeploymentCommands({
-      dryRun: false,
-      input: givenPluginInput,
+      environment: defaultEnvironment,
     });
 
     assertEquals(deleteBranchMock.calls.length, 0);
@@ -175,8 +167,7 @@ describe("post deploy commands git operations", () => {
     const {doesLocalBranchExistMock, commitMock, checkoutBranchMock, pushMock} = setupGitStub({areAnyFilesStaged: true, doesLocalBranchExist: false});
 
     await new DeployStepImpl(exec, git).runDeploymentCommands({
-      dryRun: false,
-      input: givenPluginInput,
+      environment: defaultEnvironment,
     });
 
     assertEquals(checkoutBranchMock.calls.length, 1);
@@ -215,8 +206,7 @@ describe("function return values", () => {
 
     assertEquals(
       await new DeployStepImpl(exec, git).runDeploymentCommands({
-        dryRun: false,
-        input: givenPluginInput,
+        environment: defaultEnvironment,
       }),
       givenCommitCreated,
     );
@@ -240,8 +230,7 @@ describe("function return values", () => {
     assertRejects(async () => {
       assertEquals(
         await new DeployStepImpl(exec, git).runDeploymentCommands({
-          dryRun: false,
-          input: givenPluginInput,
+          environment: defaultEnvironment,
         }),
         undefined,
       );

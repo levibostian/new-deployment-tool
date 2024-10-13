@@ -1,14 +1,15 @@
 import { exec } from "./exec.ts";
-import { DeployCommandInput } from "./steps/types/deploy.ts";
 import { assertEquals } from "jsr:@std/assert@1";
+import { DeployEnvironment } from "./types/environment.ts";
 
-const givenPluginInput: DeployCommandInput = {
+const givenPluginInput: DeployEnvironment = {
   gitCurrentBranch: "main",
   gitRepoOwner: "owner",
   gitRepoName: "repo",
   gitCommitsSinceLastRelease: [],
   nextVersionName: "1.0.0",
   isDryRun: false,
+  lastRelease: null,
 };
 
 Deno.test("given contextual input data, expect the executed command receives the input data", async () => {
