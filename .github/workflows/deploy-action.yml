@@ -1,0 +1,24 @@
+name: Deploy
+
+on: 
+  push:
+    branches: [main, alpha, beta]
+
+jobs: 
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:    
+      contents: write 
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          analyze_commits_config: |
+            {
+              'branches': [
+                {branch_name: 'main', prerelease: false},
+                {branch_name: 'beta', prerelease: true},
+                {branch_name: 'alpha', prerelease: true}
+              ]
+            } 
