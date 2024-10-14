@@ -35,7 +35,7 @@ export class DeployStepImpl implements DeployStep {
     //   deploy_commands: |
     //     echo 'hello world'
     //     echo 'hello world'
-    const deployCommands = Deno.env.get("INPUT_DEPLOY_COMMANDS")?.split("\n") ??
+    const deployCommands = Deno.env.get("INPUT_DEPLOY_COMMANDS")?.split("\n").filter(command => command.trim() !== "") ??
       [];
 
     for (const command of deployCommands) {
