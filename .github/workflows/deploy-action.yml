@@ -14,11 +14,12 @@ jobs:
       - uses: ./
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          version: ${{ github.ref_name }} 
           analyze_commits_config: |
             {
-              'branches': [
-                {branch_name: 'main', prerelease: false},
-                {branch_name: 'beta', prerelease: true},
-                {branch_name: 'alpha', prerelease: true}
+              "branches": [
+                { "branch_name": "main", "prerelease": false },
+                { "branch_name": "beta", "prerelease": true },
+                { "branch_name": "alpha", "prerelease": true }
               ]
             } 

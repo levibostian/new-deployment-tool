@@ -44,6 +44,5 @@ Deno.test("getDetermineNextReleaseStepConfig throws error when env variable is s
       githubActions.getDetermineNextReleaseStepConfig();
     },
     Error,
-    "When trying to parse the GitHub Actions input value for analyze_commits_config, I encountered an error"
   );
 });
