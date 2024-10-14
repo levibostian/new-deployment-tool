@@ -27,6 +27,7 @@ export const run = async ({
   // Parse the configuration set by the user first so we can fail early if the configuration is invalid. Fast feedback for the user. 
   // Have the function throw if the JSON parsing fails. it will then exit the function. 
   const determineNextReleaseStepConfig = githubActions.getDetermineNextReleaseStepConfig();
+  log.debug(`determine next release step config: ${JSON.stringify(determineNextReleaseStepConfig)}`);
 
   log.notice(`👋 Hello! I am a tool called new-deployment-tool. I help you deploy your projects.`);
   log.message(

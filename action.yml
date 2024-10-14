@@ -37,3 +37,4 @@ runs:
         DRY_RUN: ${{ inputs.dry_run_mode }}
         INPUT_GITHUB_TOKEN: ${{ inputs.github_token }}
         INPUT_DEPLOY_COMMANDS: ${{ inputs.deploy_commands }}
+        INPUT_ANALYZE_COMMITS_CONFIG: ${{ inputs.analyze_commits_config }}
