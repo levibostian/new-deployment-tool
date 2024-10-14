@@ -11,5 +11,5 @@ jobs:
       - uses: actions/checkout@v4
       - uses: git-town/action@v1
         with: 
-          main-branch: 'main'
+          main-branch: 'alpha'
           perennial-regex: '^feat/.*$'
