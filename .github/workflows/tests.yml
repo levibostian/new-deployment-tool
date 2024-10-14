@@ -44,8 +44,7 @@ jobs:
         # Test that the config is read by the tool and pre-release versions are working. 
         analyze_commits_config: |
           {
-            'branches': [
-              {branch_name: '${{ github.ref_name }}', prerelease: true},
-              {branch_name: 'alpha', prerelease: true}
+            "branches": [
+              { "branch_name": "${{ github.ref_name }}", "prerelease": true, "version_suffix": "test" }
             ]
-          } 
+          }

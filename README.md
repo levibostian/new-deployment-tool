@@ -198,11 +198,12 @@ While developing new features of a project, it can be convenient to create prere
     # 'prerelease' to true. 
     analyze_commits_config: |
       {
-        'branches': [
-          {branch_name: 'beta', prerelease: true, version_suffix: 'beta'},
-          {branch_name: 'alpha', prerelease: true, version_suffix: 'alpha'}
+        "branches": [
+          { "branch_name": "main", "prerelease": false },
+          { "branch_name": "beta", "prerelease": true },
+          { "branch_name": "alpha", "prerelease": true }
         ]
-      }
+      } 
 ```
 
 The example above will create pre-production releases when code is pushed to both the `alpha` and `beta` branches. 
