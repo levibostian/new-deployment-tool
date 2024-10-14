@@ -15,6 +15,9 @@ inputs:
   dry_run_mode:
     description: 'Run the deployment tool in dry-run mode. Note: this is currently for internal use only and API may change.'
     default: 'false'
+  analyze_commits_config:
+    description: 'Configure the behavior when analyzing commits.'
+    default: ''
 
 runs:
   using: "composite"
