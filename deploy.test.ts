@@ -17,7 +17,7 @@ import { DeployStep } from "./lib/steps/deploy.ts";
 import { getLogMock } from "./lib/log.test.ts";
 import { GitHubActions } from "./lib/github-actions.ts";
 
-describe("run the tool", () => {
+describe("run the tool in different scenarios", () => {
   afterEach(() => {
     restore();
   });
@@ -81,6 +81,38 @@ describe("run the tool", () => {
     assertEquals(deployStepMock.calls.length, 0);
   });
 });
+
+describe("test github actions output", () => {
+  it("should set new release version output when a new release is created", async () => {
+    const { githubActionsSetOutputMock } = await setupTestEnvironmentAndRun({
+      commitsSinceLatestRelease: [new GitHubCommitFake({
+        message: "feat: trigger a release",
+        sha: "trigger-release",
+      })],
+      nextReleaseVersion: "1.0.0",
+    });
+
+    assertEquals(
+      githubActionsSetOutputMock.calls[0].args[0].key,
+      "new_release_version"      
+    );
+    assertEquals(
+      githubActionsSetOutputMock.calls[0].args[0].value,
+      "1.0.0"
+    );
+  })
+  it("should not set new release version output when no new release is created", async () => {
+    const { githubActionsSetOutputMock } = await setupTestEnvironmentAndRun({
+      commitsSinceLatestRelease: [],
+      nextReleaseVersion: "1.0.0",
+    });
+
+    assertEquals(
+      githubActionsSetOutputMock.calls.length,
+      0
+    );
+  })
+})
 
 describe("user facing logs", () => {
   it("given no commits will trigger a release, expect logs to easily communicate that to the user", async (t) => {
@@ -202,6 +234,13 @@ const setupTestEnvironmentAndRun = async ({
       return undefined;
     },
   );
+  const githubActionsSetOutputMock = stub(
+    githubActions,
+    "setOutput",
+    () => {
+      return;
+    },
+  );
 
   await run({
     getLatestReleaseStep,
@@ -220,6 +259,7 @@ const setupTestEnvironmentAndRun = async ({
     deployStepMock,
     createNewReleaseStepMock,
     logMock,
-    githubActionsGetDetermineNextReleaseStepConfigMock
+    githubActionsGetDetermineNextReleaseStepConfigMock,
+    githubActionsSetOutputMock,
   };
 };
